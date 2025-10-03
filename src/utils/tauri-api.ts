@@ -1,61 +1,43 @@
-
 import type { DesktopAPI } from "../types/global";
+import { checkTauriAvailability, invokeTauriCommand } from "./tauri-bridge";
 
 export async function createTauriAPI(): Promise<DesktopAPI | null> {
-  
-  if (typeof window === "undefined" || !window.__TAURI__) {
+  if (typeof window === "undefined") {
     return null;
   }
 
   try {
-    const win = window as any;
-
+    const isAvailable = await checkTauriAvailability();
     
-    let invoke = null;
-
-    if (win.__TAURI__?.core?.invoke) {
-      invoke = win.__TAURI__.core.invoke;
-    } else if (win.ipc?.invoke) {
-      invoke = win.ipc.invoke;
-    } else if (win.__TAURI_INVOKE__) {
-      invoke = win.__TAURI_INVOKE__;
-    } else if (win.__TAURI__?.invoke) {
-      invoke = win.__TAURI__.invoke;
-    } else if (win.__TAURI_TAURI__?.invoke) {
-      invoke = win.__TAURI_TAURI__.invoke;
+    if (!isAvailable) {
+      return null;
     }
 
-    if (invoke) {
-      return {
-        app: {
-          getVersion: () => invoke("get_app_version"),
-          getPlatform: () => invoke("get_platform"),
-        },
+    return {
+      app: {
+        getVersion: () => invokeTauriCommand<string>("get_app_version"),
+        getPlatform: () => invokeTauriCommand<string>("get_platform"),
+      },
 
-        hardware: {
-          openCashDrawer: () => invoke("open_cash_drawer"),
-          printReceipt: (data: any) =>
-            invoke("print_receipt", { receiptData: data }),
-        },
+      hardware: {
+        openCashDrawer: () => invokeTauriCommand<string>("open_cash_drawer"),
+        printReceipt: (data: any) =>
+          invokeTauriCommand<string>("print_receipt", { receiptData: data }),
+      },
 
-        store: {
-          get: async (_key: string) => {
-            // TODO: Implement with Tauri's fs API if needed
-            return null;
-          },
-          set: async (_key: string, _value: any) => {
-            // TODO: Implement with Tauri's fs API if needed
-          },
+      store: {
+        get: async (_key: string) => {
+          return null;
         },
-
-        ui: {
-          showAlert: (title: string, message: string) =>
-            invoke("show_alert", { title, message }),
+        set: async (_key: string, _value: any) => {
         },
-      };
-    }
+      },
 
-    return null;
+      ui: {
+        showAlert: (title: string, message: string) =>
+          invokeTauriCommand<string>("show_alert", { title, message }),
+      },
+    };
   } catch (error) {
     console.error("Failed to create Tauri API:", error);
     return null;
