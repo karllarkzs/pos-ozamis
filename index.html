@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pharmacy POS</title>
+    <style>
+      /* Override specific Mantine margin issues */
+      .m_7485cace {
+        margin-inline: 0 !important;
+      }
+
+      /* Force horizontal scroll for data tables only when needed */
+      .datatable-horizontal-scroll {
+        overflow-x: auto !important;
+        width: 100% !important;
+      }
+
+      /* Override table layout for horizontal scrolling */
+      .datatable-horizontal-scroll .mantine-Table-root {
+        table-layout: auto !important;
+        width: max-content !important;
+        min-width: 1200px !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
