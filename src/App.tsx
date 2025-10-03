@@ -20,7 +20,6 @@ import { apiEndpoints } from "./lib/api";
 function App() {
   const { isAuthenticated, isLoading, tokenExpiresAt, dispatch } = useAuth();
 
-  
   useEffect(() => {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
@@ -76,7 +75,6 @@ function App() {
     try {
       dispatch(loginStart());
 
-      
       const loginResponse = await apiEndpoints.auth.login({
         username,
         password,
@@ -85,7 +83,6 @@ function App() {
       if (loginResponse.data.success) {
         const { accessToken, expiresAt, user } = loginResponse.data.data;
 
-        
         dispatch(
           loginSuccess({
             user,
@@ -94,7 +91,6 @@ function App() {
           })
         );
 
-        
         try {
           const profileResponse = await apiEndpoints.auth.getCurrentUser();
           if (profileResponse.data.success) {
@@ -102,7 +98,6 @@ function App() {
           }
         } catch (profileError) {
           console.warn("Failed to fetch user profile:", profileError);
-          
         }
 
         return true;
@@ -113,7 +108,6 @@ function App() {
     } catch (error: any) {
       console.error("Login error:", error);
 
-      
       let errorMessage = "Login failed";
       if (error.response?.status === 401) {
         errorMessage = "Invalid username or password";
