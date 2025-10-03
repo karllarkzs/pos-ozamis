@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { LoginPage } from "./pages/LoginPage";
 import { POSPage } from "./pages/POSPage";
 import { AdminPage } from "./pages/AdminPage";
+import { UpdateNotification } from "./components/UpdateNotification";
 import { useAuth } from "./store/hooks";
 import {
   loginStart,
@@ -131,17 +132,22 @@ function App() {
     return <LoadingOverlay visible />;
   }
 
-  return !isAuthenticated ? (
-    <Container size="sm" py="xl">
-      <Center h="100%" w="100%">
-        <LoginPage onLogin={handleLogin} />
-      </Center>
-    </Container>
-  ) : (
-    <Routes>
-      <Route path="/" element={<POSPage />} />
-      <Route path="/admin/*" element={<AdminPage />} />
-    </Routes>
+  return (
+    <>
+      <UpdateNotification />
+      {!isAuthenticated ? (
+        <Container size="sm" py="xl">
+          <Center h="100%" w="100%">
+            <LoginPage onLogin={handleLogin} />
+          </Center>
+        </Container>
+      ) : (
+        <Routes>
+          <Route path="/" element={<POSPage />} />
+          <Route path="/admin/*" element={<AdminPage />} />
+        </Routes>
+      )}
+    </>
   );
 }
 

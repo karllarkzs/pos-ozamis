@@ -3,6 +3,7 @@ let pendingRequests = new Map<
   string,
   { resolve: (value: any) => void; reject: (error: any) => void }
 >();
+let updateReadyCallbacks: Array<(version: string) => void> = [];
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -25,6 +26,8 @@ window.addEventListener("message", (event) => {
       request.reject(new Error(data.error));
       pendingRequests.delete(data.id);
     }
+  } else if (data.type === "UPDATE_READY") {
+    updateReadyCallbacks.forEach((callback) => callback(data.version));
   }
 });
 
@@ -77,6 +80,20 @@ export function invokeTauriCommand<T>(
 
 export function isTauri(): boolean {
   return isTauriAvailable || !!window.__TAURI__;
+}
+
+export function onUpdateReady(callback: (version: string) => void): () => void {
+  updateReadyCallbacks.push(callback);
+  return () => {
+    const index = updateReadyCallbacks.indexOf(callback);
+    if (index > -1) {
+      updateReadyCallbacks.splice(index, 1);
+    }
+  };
+}
+
+export function restartApp(): Promise<string> {
+  return invokeTauriCommand<string>("restart_app");
 }
 
 checkTauriAvailability();

@@ -8,7 +8,7 @@ export async function createTauriAPI(): Promise<DesktopAPI | null> {
 
   try {
     const isAvailable = await checkTauriAvailability();
-    
+
     if (!isAvailable) {
       return null;
     }
@@ -29,8 +29,7 @@ export async function createTauriAPI(): Promise<DesktopAPI | null> {
         get: async (_key: string) => {
           return null;
         },
-        set: async (_key: string, _value: any) => {
-        },
+        set: async (_key: string, _value: any) => {},
       },
 
       ui: {
