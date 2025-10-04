@@ -267,7 +267,7 @@ export function useProcessTransaction() {
           quantity: item.quantity,
         })),
       });
-      return response.data.data;
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: catalogKeys.all });
