@@ -1,12 +1,9 @@
-# Netlify Configuration for OCT POS Frontend
-# Based on official Netlify Vite documentation
-
 [build]
   command = "yarn build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20.18.1"
 
 # SPA redirect rule - serves index.html for all routes to avoid 404s
 # This is essential for React Router and other SPA routing
