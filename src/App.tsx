@@ -80,7 +80,6 @@ function App() {
         if (now > expiry) {
           console.log("Token expired, logging out");
           dispatch(logout());
-          // Also clear persisted data
           localStorage.removeItem("persist:pharmacy-pos-root");
           localStorage.removeItem("auth-token");
           return;
@@ -90,15 +89,26 @@ function App() {
       }
     };
 
-    // Check session immediately on mount (handles stale data from improper shutdown)
+    const handleUnauthorized = () => {
+      console.log("401 Unauthorized received, logging out");
+      dispatch(logout());
+    };
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+
     checkSession();
     const interval = setInterval(checkSession, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
   }, [isAuthenticated, tokenExpiresAt, dispatch]);
 
   // Fetch system settings on startup and poll every 5 minutes
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchSettings = async () => {
       try {
         settings.dispatch(fetchSettingsStart());
@@ -134,14 +144,12 @@ function App() {
       }
     };
 
-    // Fetch immediately on startup
     fetchSettings();
 
-    // Poll every 5 minutes (300000ms)
     const interval = setInterval(fetchSettings, 300000);
 
     return () => clearInterval(interval);
-  }, [settings.dispatch]);
+  }, [isAuthenticated, settings.dispatch]);
 
   const handleLogin = async (username: string, password: string) => {
     try {
