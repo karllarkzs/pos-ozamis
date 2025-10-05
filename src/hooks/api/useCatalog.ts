@@ -243,9 +243,10 @@ export function useProcessTransaction() {
     }: {
       items: CartItem[];
       paymentData: {
-        paymentMethod: "Cash" | "GCash";
-        gcashReference?: string;
+        paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+        referenceNumber?: string;
         cashInHand?: number;
+        seniorId?: string;
         specialDiscount: number;
         regularDiscount: number;
         subtotal: number;
@@ -255,8 +256,9 @@ export function useProcessTransaction() {
     }): Promise<Transaction> => {
       const response = await apiEndpoints.transactions.create({
         paymentMethod: paymentData.paymentMethod,
-        gcashReference: paymentData.gcashReference || null,
+        referenceNumber: paymentData.referenceNumber || null,
         cashInHand: paymentData.cashInHand || null,
+        seniorId: paymentData.seniorId || null,
         specialDiscount: paymentData.specialDiscount,
         regularDiscount: paymentData.regularDiscount,
         subtotal: paymentData.subtotal,
@@ -278,9 +280,10 @@ export function useProcessTransaction() {
   const processTransaction = async (
     items: CartItem[],
     paymentData: {
-      paymentMethod: "Cash" | "GCash";
-      gcashReference?: string;
+      paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+      referenceNumber?: string;
       cashInHand?: number;
+      seniorId?: string;
       specialDiscount: number;
       regularDiscount: number;
       subtotal: number;

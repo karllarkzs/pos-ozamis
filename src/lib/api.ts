@@ -576,9 +576,10 @@ export interface CreateTransactionItem {
 }
 
 export interface CreateTransactionRequest {
-  paymentMethod: "Cash" | "GCash";
-  gcashReference?: string | null;
+  paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+  referenceNumber?: string | null;
   cashInHand?: number | null;
+  seniorId?: string | null;
   specialDiscount: number;
   regularDiscount: number;
   subtotal: number;
@@ -615,8 +616,8 @@ export interface Transaction {
   discountAmount: number;
   vatAmount: number;
   totalAmount: number;
-  paymentMethod: "Cash" | "GCash";
-  gcashReference?: string | null;
+  paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+  referenceNumber?: string | null;
   cashInHand?: number | null;
   changeAmount: number;
   isVoided: boolean;
@@ -677,6 +678,23 @@ export interface TransactionStatistics {
 
 export interface VoidTransactionRequest {
   voidReason: string;
+}
+
+export interface Discount {
+  id: string;
+  discountName: string;
+  percent: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+}
+
+export interface DiscountRequest {
+  discountName: string;
+  percent: number;
+  isActive?: boolean;
 }
 
 export interface RestockBatchItem {
@@ -846,6 +864,10 @@ const buildQueryString = (filters: CatalogFilters): string => {
 };
 
 export const apiEndpoints = {
+  health: {
+    check: () => api.get<{ status: string; timestamp: string }>("/health"),
+  },
+
   tests: {
     getAll: (filters?: TestFilters) => {
       const params = new URLSearchParams();
@@ -1917,5 +1939,52 @@ export const apiEndpoints = {
 
     changePassword: (id: string, newPassword: string) =>
       api.put<{ message: string }>(`/users/${id}/password`, { newPassword }),
+  },
+
+  systemSettings: {
+    getAll: () =>
+      api.get<
+        Array<{
+          id: string;
+          key: string;
+          displayName: string;
+          value: string;
+          dataType: string;
+          description: string;
+          category: string;
+          isRequired: boolean;
+          isActive: boolean;
+          parsedValue: string | number | boolean;
+          defaultValue: string;
+          validationRules: string | null;
+          sortOrder: number;
+          createdAt: string;
+          updatedAt: string;
+          createdBy: string;
+          updatedBy: string;
+        }>
+      >("/systemsettings"),
+
+    updateSetting: (key: string, value: string) =>
+      api.patch<{ message: string }>(`/systemsettings/${key}`, { key, value }),
+
+    toggleSetting: (key: string) =>
+      api.patch<{ message: string; key: string; isActive: boolean }>(
+        `/systemsettings/${key}/toggle`
+      ),
+
+    seed: () =>
+      api.post<{ message: string; count: number }>("/systemsettings/seed"),
+  },
+
+  discounts: {
+    getAll: (includeInactive: boolean = false) =>
+      api.get<Discount[]>(`/discounts?includeInactive=${includeInactive}`),
+
+    getActive: () => api.get<Discount[]>("/discounts/active"),
+
+    getById: (id: string) => api.get<Discount>(`/discounts/${id}`),
+
+    create: (data: DiscountRequest) => api.post<Discount>("/discounts", data),
   },
 };

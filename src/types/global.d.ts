@@ -5,7 +5,12 @@ export interface DesktopAPI {
   };
 
   hardware: {
-    openCashDrawer: () => Promise<string>;
+    getPrinters: () => Promise<string[]>;
+    testPrintReceipt: (printerName: string) => Promise<string>;
+    printEscposReceipt: (
+      printerName: string,
+      escposData: number[]
+    ) => Promise<string>;
     printReceipt: (data: any) => Promise<string>;
   };
 
@@ -61,11 +66,9 @@ export interface TestResponse {
 }
 
 export interface TestFilters {
-  
   page?: number;
   pageSize?: number;
 
-  
   searchTerm?: string;
   name?: string;
   minPrice?: number;
@@ -73,7 +76,6 @@ export interface TestFilters {
   canPerform?: boolean;
   includeDeleted?: boolean;
 
-  
   sortBy?: "name" | "price" | "createdAt";
   sortDirection?: "asc" | "desc";
 }

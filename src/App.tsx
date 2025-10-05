@@ -6,7 +6,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { POSPage } from "./pages/POSPage";
 import { AdminPage } from "./pages/AdminPage";
 import { UpdateNotification } from "./components/UpdateNotification";
-import { useAuth } from "./store/hooks";
+import { useAuth, useSettings } from "./store/hooks";
 import {
   loginStart,
   loginSuccess,
@@ -15,10 +15,16 @@ import {
   setUser,
   updateActivity,
 } from "./store/slices/authSlice";
+import {
+  fetchSettingsStart,
+  fetchSettingsSuccess,
+  fetchSettingsFailure,
+} from "./store/slices/settingsSlice";
 import { apiEndpoints } from "./lib/api";
 
 function App() {
   const { isAuthenticated, isLoading, tokenExpiresAt, dispatch } = useAuth();
+  const settings = useSettings();
 
   useEffect(() => {
     document.body.style.margin = "0";
@@ -34,19 +40,35 @@ function App() {
 
   useEffect(() => {
     const initAPI = async () => {
-      if (
-        typeof window !== "undefined" &&
-        window.__TAURI__ &&
-        !window.electronAPI
-      ) {
+      if (typeof window !== "undefined" && !window.electronAPI) {
         const tauriAPI = await createTauriAPI();
         if (tauriAPI) {
           window.electronAPI = tauriAPI;
+          console.log("Tauri API initialized successfully");
         }
       }
     };
 
     initAPI();
+
+    // Listen for persist clear message from parent window
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "CLEAR_PERSIST") {
+        console.log("Clearing persisted data on app close");
+        // Clear localStorage keys used by redux-persist
+        try {
+          localStorage.removeItem("persist:pharmacy-pos-root");
+          localStorage.removeItem("auth-token");
+          localStorage.removeItem("defaultPrinter");
+          console.log("Persisted data cleared");
+        } catch (e) {
+          console.error("Failed to clear localStorage:", e);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   useEffect(() => {
@@ -58,6 +80,9 @@ function App() {
         if (now > expiry) {
           console.log("Token expired, logging out");
           dispatch(logout());
+          // Also clear persisted data
+          localStorage.removeItem("persist:pharmacy-pos-root");
+          localStorage.removeItem("auth-token");
           return;
         }
 
@@ -65,11 +90,58 @@ function App() {
       }
     };
 
+    // Check session immediately on mount (handles stale data from improper shutdown)
     checkSession();
     const interval = setInterval(checkSession, 60000);
 
     return () => clearInterval(interval);
   }, [isAuthenticated, tokenExpiresAt, dispatch]);
+
+  // Fetch system settings on startup and poll every 5 minutes
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        settings.dispatch(fetchSettingsStart());
+        const response = await apiEndpoints.systemSettings.getAll();
+
+        // Transform array of settings into flat object structure
+        const settingsObj = {
+          storeName:
+            response.data.find((s) => s.key === "store_name")?.value ||
+            "OCT POS",
+          storeOwner:
+            response.data.find((s) => s.key === "store_owner")?.value || "",
+          storeLocation:
+            response.data.find((s) => s.key === "store_location")?.value || "",
+          storeContact:
+            response.data.find((s) => s.key === "store_contact")?.value || "",
+          vatAmount: Number(
+            response.data.find((s) => s.key === "vat_amount")?.value || 0
+          ),
+          showVat:
+            response.data.find((s) => s.key === "show_vat")?.value === "true",
+        };
+
+        settings.dispatch(fetchSettingsSuccess(settingsObj));
+        console.log("System settings loaded:", settingsObj);
+      } catch (error: any) {
+        console.error("Failed to fetch system settings:", error);
+        settings.dispatch(
+          fetchSettingsFailure(
+            error.message || "Failed to load system settings"
+          )
+        );
+      }
+    };
+
+    // Fetch immediately on startup
+    fetchSettings();
+
+    // Poll every 5 minutes (300000ms)
+    const interval = setInterval(fetchSettings, 300000);
+
+    return () => clearInterval(interval);
+  }, [settings.dispatch]);
 
   const handleLogin = async (username: string, password: string) => {
     try {
@@ -100,25 +172,29 @@ function App() {
           console.warn("Failed to fetch user profile:", profileError);
         }
 
-        return true;
+        return { success: true, error: null };
       } else {
-        dispatch(loginFailure(loginResponse.data.message || "Login failed"));
-        return false;
+        const errorMessage = loginResponse.data.message || "Login failed";
+        dispatch(loginFailure(errorMessage));
+        return { success: false, error: errorMessage };
       }
     } catch (error: any) {
       console.error("Login error:", error);
 
       let errorMessage = "Login failed";
       if (error.response?.status === 401) {
-        errorMessage = "Invalid username or password";
+        errorMessage =
+          error.response?.data?.message || "Invalid username or password";
       } else if (error.response?.status === 403) {
-        errorMessage = "Account is inactive";
+        errorMessage = error.response?.data?.message || "Account is inactive";
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       dispatch(loginFailure(errorMessage));
-      return false;
+      return { success: false, error: errorMessage };
     }
   };
 

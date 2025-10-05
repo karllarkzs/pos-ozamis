@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Modal,
   Text,
@@ -30,6 +30,9 @@ import { Transaction, TransactionItemResponse } from "../lib/api";
 import { formatCurrency } from "../utils/currency";
 import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
+import { useSettings } from "../store/hooks";
+import { generateReceiptESCPOS } from "../utils/escpos";
+import { printEscposReceipt } from "../utils/tauri-api";
 
 function getTodayDateRange() {
   const now = new Date();
@@ -93,7 +96,29 @@ export function TransactionListModal({
   const [selectedTransactionId, setSelectedTransactionId] = useState<
     string | null
   >(null);
+  const [isTauri, setIsTauri] = useState(false);
   const voidTransaction = useVoidTransaction();
+  const settings = useSettings();
+
+  // Detect if running in Tauri
+  useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const checkTauri = () => {
+      if (window.__TAURI__ || window.electronAPI) {
+        setIsTauri(true);
+        return;
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(checkTauri, 200);
+      }
+    };
+
+    checkTauri();
+  }, []);
 
   const todayRange = useMemo(() => getTodayDateRange(), []);
 
@@ -128,18 +153,75 @@ export function TransactionListModal({
     setSelectedTransactionId(transaction.id);
   }, []);
 
-  const handlePrint = useCallback((transaction: Transaction) => {
-    console.log("=== PRINTING RECEIPT ===");
-    console.log("Transaction:", transaction);
-    console.log("Items:", transaction.items);
-    console.log("========================");
+  const handlePrint = useCallback(
+    async (transaction: Transaction) => {
+      console.log("=== REPRINTING RECEIPT ===");
+      console.log("Transaction:", transaction);
+      console.log("Running in Tauri:", isTauri);
 
-    notifications.show({
-      title: "Print Receipt",
-      message: `Receipt #${transaction.receiptNumber} logged to console`,
-      color: "blue",
-    });
-  }, []);
+      if (!isTauri) {
+        notifications.show({
+          title: "Printing Not Available",
+          message: "Receipt printing is only available in the desktop app",
+          color: "orange",
+        });
+        return;
+      }
+
+      if (!window.electronAPI) {
+        notifications.show({
+          title: "Printer API Not Ready",
+          message: "Please wait a moment and try again",
+          color: "orange",
+        });
+        return;
+      }
+
+      const defaultPrinter = localStorage.getItem("defaultPrinter");
+      if (!defaultPrinter) {
+        notifications.show({
+          title: "No Default Printer",
+          message: "Please set a default printer in Settings",
+          color: "orange",
+        });
+        return;
+      }
+
+      try {
+        console.log("Current settings:", settings);
+        console.log("Settings object:", settings.settings);
+        console.log("Store name:", settings.settings.storeName);
+        console.log("Store location:", settings.settings.storeLocation);
+        console.log("Store contact:", settings.settings.storeContact);
+
+        // Generate ESC/POS commands
+        const escposData = generateReceiptESCPOS(
+          transaction,
+          settings.settings
+        );
+
+        // Convert Uint8Array to number array for Tauri
+        const escposArray = Array.from(escposData);
+
+        // Send to printer
+        await printEscposReceipt(defaultPrinter, escposArray);
+
+        notifications.show({
+          title: "Receipt Sent to Printer",
+          message: `Reprinting receipt #${transaction.receiptNumber}`,
+          color: "green",
+        });
+      } catch (error: any) {
+        console.error("Failed to print receipt:", error);
+        notifications.show({
+          title: "Print Failed",
+          message: error.message || "Failed to print receipt",
+          color: "red",
+        });
+      }
+    },
+    [isTauri, settings.settings]
+  );
 
   const handleVoid = useCallback(
     (transaction: Transaction) => {
@@ -450,13 +532,13 @@ export function TransactionListModal({
                       {selectedTransaction.paymentMethod}
                     </Badge>
                   </Group>
-                  {selectedTransaction.gcashReference && (
+                  {selectedTransaction.referenceNumber && (
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">
-                        GCash Reference
+                        Reference Number
                       </Text>
                       <Text size="sm" fw={500} ff="monospace">
-                        {selectedTransaction.gcashReference}
+                        {selectedTransaction.referenceNumber}
                       </Text>
                     </Group>
                   )}

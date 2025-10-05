@@ -9,8 +9,11 @@ export interface CartItem {
 }
 
 export interface Discount {
-  isRegularDiscounted: boolean;
+  discountId: string | null;
+  discountPercent: number;
+  discountName: string | null;
   specialDiscountAmount: number;
+  seniorId: string | null;
 }
 
 export interface CartState {
@@ -22,8 +25,11 @@ export interface CartState {
 const initialState: CartState = {
   items: [],
   discount: {
-    isRegularDiscounted: false,
+    discountId: null,
+    discountPercent: 0,
+    discountName: null,
     specialDiscountAmount: 0,
+    seniorId: null,
   },
   lastUpdated: new Date().toISOString(),
 };
@@ -43,8 +49,11 @@ export interface UpdateQuantityPayload {
 }
 
 export interface UpdateDiscountPayload {
-  isRegularDiscounted?: boolean;
+  discountId?: string | null;
+  discountPercent?: number;
+  discountName?: string | null;
   specialDiscountAmount?: number;
+  seniorId?: string | null;
 }
 
 const cartSlice = createSlice({
@@ -103,17 +112,37 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
       state.discount = {
-        isRegularDiscounted: false,
+        discountId: null,
+        discountPercent: 0,
+        discountName: null,
         specialDiscountAmount: 0,
+        seniorId: null,
       };
       state.lastUpdated = new Date().toISOString();
     },
 
     updateDiscount: (state, action: PayloadAction<UpdateDiscountPayload>) => {
-      const { isRegularDiscounted, specialDiscountAmount } = action.payload;
+      const {
+        discountId,
+        discountPercent,
+        discountName,
+        specialDiscountAmount,
+        seniorId,
+      } = action.payload;
 
-      if (isRegularDiscounted !== undefined) {
-        state.discount.isRegularDiscounted = isRegularDiscounted;
+      if (discountId !== undefined) {
+        state.discount.discountId = discountId;
+      }
+
+      if (discountPercent !== undefined) {
+        state.discount.discountPercent = Math.max(
+          0,
+          Math.min(100, discountPercent)
+        );
+      }
+
+      if (discountName !== undefined) {
+        state.discount.discountName = discountName;
       }
 
       if (specialDiscountAmount !== undefined) {
@@ -121,6 +150,10 @@ const cartSlice = createSlice({
           0,
           specialDiscountAmount
         );
+      }
+
+      if (seniorId !== undefined) {
+        state.discount.seniorId = seniorId;
       }
 
       state.lastUpdated = new Date().toISOString();
@@ -172,19 +205,26 @@ export const selectCartSubtotal = (state: { cart: CartState }) =>
     0
   );
 
-export const selectCartVAT = (state: { cart: CartState }) => {
+export const selectCartVAT = (state: { cart: CartState; settings: any }) => {
   const subtotal = selectCartSubtotal(state);
-  return subtotal * 0.12;
+  const showVat = state.settings?.settings?.showVat ?? false;
+  const vatAmount = state.settings?.settings?.vatAmount ?? 0;
+
+  if (!showVat || vatAmount === 0) {
+    return 0;
+  }
+
+  return subtotal * (vatAmount / 100);
 };
 
-export const selectCartTotal = (state: { cart: CartState }) => {
+export const selectCartTotal = (state: { cart: CartState; settings: any }) => {
   const subtotal = selectCartSubtotal(state);
   const vat = selectCartVAT(state);
   const baseTotal = subtotal + vat;
 
-  const { isRegularDiscounted, specialDiscountAmount } = state.cart.discount;
+  const { discountPercent, specialDiscountAmount } = state.cart.discount;
 
-  const regularDiscountAmount = isRegularDiscounted ? baseTotal * 0.1 : 0;
+  const regularDiscountAmount = baseTotal * (discountPercent / 100);
 
   const finalTotal = baseTotal - regularDiscountAmount - specialDiscountAmount;
 
@@ -195,10 +235,10 @@ export const selectCartDiscountAmounts = createSelector(
   [selectCartSubtotal, selectCartVAT, selectCartDiscount],
   (subtotal, vat, discount) => {
     const baseTotal = subtotal + vat;
-    const { isRegularDiscounted, specialDiscountAmount } = discount;
+    const { discountPercent, specialDiscountAmount } = discount;
 
     return {
-      regularDiscountAmount: isRegularDiscounted ? baseTotal * 0.1 : 0,
+      regularDiscountAmount: baseTotal * (discountPercent / 100),
       specialDiscountAmount: specialDiscountAmount,
     };
   }

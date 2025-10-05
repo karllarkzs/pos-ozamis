@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Paper,
   TextInput,
@@ -19,7 +19,10 @@ import {
 } from "@tabler/icons-react";
 
 interface LoginPageProps {
-  onLogin: (username: string, password: string) => Promise<boolean> | boolean;
+  onLogin: (
+    username: string,
+    password: string
+  ) => Promise<{ success: boolean; error: string | null }>;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -27,24 +30,59 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isTauri, setIsTauri] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkTauri = async () => {
+      if (!mounted) return;
+
+      const inIframe = window.self !== window.top;
+      const hasDirectTauri =
+        typeof window !== "undefined" && !!window.__TAURI__;
+      const hasAPI = typeof window !== "undefined" && !!window.electronAPI;
+
+      const tauri = hasDirectTauri || (inIframe && hasAPI);
+      const desktop = hasDirectTauri || hasAPI;
+
+      console.log("=== Tauri Detection Debug ===");
+      console.log("In iframe:", inIframe);
+      console.log("window.__TAURI__:", window.__TAURI__);
+      console.log("window.electronAPI:", window.electronAPI);
+      console.log("Setting isTauri:", tauri);
+      console.log("Setting isDesktop:", desktop);
+
+      if (tauri !== isTauri) setIsTauri(tauri);
+      if (desktop !== isDesktop) setIsDesktop(desktop);
+    };
+
+    checkTauri();
+
+    const interval = setInterval(checkTauri, 100);
+    const timeout = setTimeout(() => clearInterval(interval), 2000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isTauri, isDesktop]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const success = await onLogin(username, password);
+    const result = await onLogin(username, password);
 
-    if (!success) {
-      setError("Invalid username or password");
+    if (!result.success && result.error) {
+      setError(result.error);
     }
 
     setLoading(false);
   };
-
-  const isDesktop =
-    typeof window !== "undefined" && (window.electronAPI || window.__TAURI__);
-  const isTauri = typeof window !== "undefined" && window.__TAURI__;
 
   return (
     <div

@@ -5,7 +5,7 @@ import {
   Group,
   Text,
   Button,
-  SegmentedControl,
+  Select,
   NumberInput,
   TextInput,
   Paper,
@@ -22,13 +22,16 @@ import {
   IconReceipt,
 } from "@tabler/icons-react";
 import { formatCurrency } from "../utils/currency";
+import { useSettings } from "../store/hooks";
+
+type PaymentMethod = "Cash" | "GCash" | "Maya" | "GoTyme";
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (paymentData: {
-    paymentMethod: "Cash" | "GCash";
-    gcashReference?: string;
+    paymentMethod: PaymentMethod;
+    referenceNumber?: string;
     cashInHand?: number;
   }) => Promise<void>;
   isProcessing: boolean;
@@ -48,6 +51,8 @@ export function PaymentModal({
   isProcessing,
   transactionSummary,
 }: PaymentModalProps) {
+  const settings = useSettings();
+
   const discountAmount =
     transactionSummary.regularDiscount + transactionSummary.specialDiscount;
   const taxableAmount = Math.max(
@@ -57,9 +62,9 @@ export function PaymentModal({
   const correctVAT = taxableAmount * 0.12;
   const correctTotal = taxableAmount + correctVAT;
 
-  const [paymentMethod, setPaymentMethod] = useState<"Cash" | "GCash">("Cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Cash");
   const [cashInHand, setCashInHand] = useState<number>(correctTotal);
-  const [gcashReference, setGcashReference] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
   const [error, setError] = useState("");
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [hasInteractedWithReference, setHasInteractedWithReference] =
@@ -71,11 +76,10 @@ export function PaymentModal({
       setError("");
       setHasAttemptedSubmit(false);
       setHasInteractedWithReference(false);
-      setGcashReference("");
+      setReferenceNumber("");
     }
   }, [isOpen, correctTotal]);
 
-  
   useEffect(() => {
     setHasInteractedWithReference(false);
     setHasAttemptedSubmit(false);
@@ -85,12 +89,14 @@ export function PaymentModal({
   const changeAmount =
     paymentMethod === "Cash" ? Math.max(0, cashInHand - correctTotal) : 0;
 
+  const requiresReference = paymentMethod !== "Cash";
   const isInsufficientCash =
     paymentMethod === "Cash" && cashInHand < correctTotal;
-  const isInvalidGCash = paymentMethod === "GCash" && !gcashReference.trim();
-  const shouldShowGCashError =
-    isInvalidGCash && (hasAttemptedSubmit || hasInteractedWithReference);
-  const canConfirm = !isInsufficientCash && !isInvalidGCash && !isProcessing;
+  const isInvalidReference = requiresReference && !referenceNumber.trim();
+  const shouldShowReferenceError =
+    isInvalidReference && (hasAttemptedSubmit || hasInteractedWithReference);
+  const canConfirm =
+    !isInsufficientCash && !isInvalidReference && !isProcessing;
 
   const handleConfirm = async () => {
     setError("");
@@ -102,19 +108,19 @@ export function PaymentModal({
         return;
       }
 
-      if (paymentMethod === "GCash" && !gcashReference.trim()) {
-        setError("GCash reference number is required");
+      if (requiresReference && !referenceNumber.trim()) {
+        setError(`${paymentMethod} reference number is required`);
         return;
       }
 
       await onConfirm({
         paymentMethod,
-        gcashReference: paymentMethod === "GCash" ? gcashReference : undefined,
+        referenceNumber: requiresReference ? referenceNumber : undefined,
         cashInHand: paymentMethod === "Cash" ? cashInHand : undefined,
       });
 
       setCashInHand(correctTotal);
-      setGcashReference("");
+      setReferenceNumber("");
       setError("");
     } catch (error: any) {
       setError(error.message || "Payment processing failed");
@@ -176,10 +182,12 @@ export function PaymentModal({
               </Group>
             )}
 
-            <Group justify="space-between">
-              <Text size="sm">VAT (12%)</Text>
-              <Text size="sm">{formatCurrency(correctVAT)}</Text>
-            </Group>
+            {settings.showVat && correctVAT > 0 && (
+              <Group justify="space-between">
+                <Text size="sm">VAT ({settings.vatAmount}%)</Text>
+                <Text size="sm">{formatCurrency(correctVAT)}</Text>
+              </Group>
+            )}
 
             <Divider />
 
@@ -195,40 +203,30 @@ export function PaymentModal({
         </Paper>
 
         {}
-        <Stack gap="sm">
-          <Text size="sm" fw={500}>
-            Payment Method
-          </Text>
-          <SegmentedControl
-            value={paymentMethod}
-            onChange={(value) => {
-              setPaymentMethod(value as "Cash" | "GCash");
-              setError("");
-            }}
-            data={[
-              {
-                label: (
-                  <Group gap="xs" justify="center">
-                    <IconCash size={16} />
-                    <Text>Cash</Text>
-                  </Group>
-                ),
-                value: "Cash",
-              },
-              {
-                label: (
-                  <Group gap="xs" justify="center">
-                    <IconCreditCard size={16} />
-                    <Text>GCash</Text>
-                  </Group>
-                ),
-                value: "GCash",
-              },
-            ]}
-            fullWidth
-            disabled={isProcessing}
-          />
-        </Stack>
+        <Select
+          label="Payment Method"
+          placeholder="Select payment method"
+          value={paymentMethod}
+          onChange={(value) => {
+            setPaymentMethod(value as PaymentMethod);
+            setError("");
+          }}
+          data={[
+            { value: "Cash", label: "Cash" },
+            { value: "GCash", label: "GCash" },
+            { value: "Maya", label: "Maya" },
+            { value: "GoTyme", label: "GoTyme" },
+          ]}
+          size="md"
+          disabled={isProcessing}
+          leftSection={
+            paymentMethod === "Cash" ? (
+              <IconCash size={16} />
+            ) : (
+              <IconCreditCard size={16} />
+            )
+          }
+        />
 
         {}
         {paymentMethod === "Cash" && (
@@ -307,19 +305,22 @@ export function PaymentModal({
           </Stack>
         )}
 
-        {paymentMethod === "GCash" && (
+        {requiresReference && (
           <TextInput
-            label="GCash Reference Number"
-            placeholder="Enter GCash reference (e.g., GC-2025-0115-001)"
-            value={gcashReference}
+            label={`${paymentMethod} Reference Number`}
+            placeholder={`Enter ${paymentMethod} reference (e.g., ${paymentMethod}-2025-0115-001)`}
+            value={referenceNumber}
             onChange={(e) => {
-              setGcashReference(e.currentTarget.value);
+              setReferenceNumber(e.currentTarget.value);
               setHasInteractedWithReference(true);
               setError("");
             }}
             size="md"
             disabled={isProcessing}
-            error={shouldShowGCashError ? "Reference number is required" : ""}
+            error={
+              shouldShowReferenceError ? "Reference number is required" : ""
+            }
+            required
           />
         )}
 

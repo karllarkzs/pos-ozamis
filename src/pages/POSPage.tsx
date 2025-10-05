@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "../hooks/useDebounce";
+import { notifications } from "@mantine/notifications";
 import {
   TextInput,
   Select,
@@ -21,7 +22,7 @@ import {
   Avatar,
   UnstyledButton,
   Title,
-  Alert,
+  Loader,
 } from "@mantine/core";
 import {
   IconSearch,
@@ -46,15 +47,20 @@ import {
   useProductsReferenceData,
 } from "../hooks/api";
 import type { CatalogItem } from "../hooks/api";
-import { useAuth, useCart } from "../store/hooks";
+import { apiEndpoints } from "../lib/api";
+import { useAuth, useCart, useSettings } from "../store/hooks";
 import { logout, getRoleName } from "../store/slices/authSlice";
 import { PaymentModal } from "../components/PaymentModal";
 import { TransactionListModal } from "../components/TransactionListModal";
+import { PrinterSettingsModal } from "../components/PrinterSettingsModal";
 import { formatCurrency } from "../utils/currency";
+import { generateReceiptESCPOS } from "../utils/escpos";
+import { printEscposReceipt } from "../utils/tauri-api";
 
 export function POSPage() {
   const { user, dispatch } = useAuth();
   const cart = useCart();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [productType, setProductType] = useState<string | null>(null);
@@ -74,14 +80,16 @@ export function POSPage() {
   >("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isTauri, setIsTauri] = useState(false);
+  const [discounts, setDiscounts] = useState<
+    Array<{ id: string; discountName: string; percent: number }>
+  >([]);
 
-  
   const productTypeCombobox = useCombobox();
   const formulationCombobox = useCombobox();
   const categoryCombobox = useCombobox();
   const locationCombobox = useCombobox();
 
-  
   const [productTypeSearch, setProductTypeSearch] = useState("");
   const [formulationSearch, setFormulationSearch] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
@@ -96,15 +104,86 @@ export function POSPage() {
   const [paymentModalOpened, setPaymentModalOpened] = useState(false);
   const [transactionListModalOpened, setTransactionListModalOpened] =
     useState(false);
+  const [printerSettingsModalOpened, setPrinterSettingsModalOpened] =
+    useState(false);
+  const [isServerConnected, setIsServerConnected] = useState(true);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Tauri detection with polling
+  useEffect(() => {
+    let mounted = true;
+
+    const checkTauri = async () => {
+      if (!mounted) return;
+
+      const inIframe = window.self !== window.top;
+      const hasDirectTauri =
+        typeof window !== "undefined" && !!window.__TAURI__;
+      const hasAPI = typeof window !== "undefined" && !!window.electronAPI;
+
+      const tauri = hasDirectTauri || (inIframe && hasAPI);
+
+      if (tauri !== isTauri) setIsTauri(tauri);
+    };
+
+    checkTauri();
+
+    const interval = setInterval(checkTauri, 100);
+    const timeout = setTimeout(() => clearInterval(interval), 2000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isTauri]);
+
+  // Auto-open printer settings if no default printer is configured
+  useEffect(() => {
+    if (isTauri) {
+      const defaultPrinter = localStorage.getItem("defaultPrinter");
+      if (!defaultPrinter) {
+        console.log("No default printer found, opening printer settings...");
+        setPrinterSettingsModalOpened(true);
+      }
+    }
+  }, [isTauri]);
+
+  // Fetch active discounts
+  useEffect(() => {
+    const fetchDiscounts = async () => {
+      try {
+        const response = await apiEndpoints.discounts.getActive();
+        setDiscounts(response.data);
+      } catch (error) {
+        console.error("Failed to fetch discounts:", error);
+      }
+    };
+    fetchDiscounts();
+  }, []);
+
   const referenceData = useProductsReferenceData();
 
   const showReferenceDataError = referenceData.hasAnyError;
+
+  // Show notification for reference data errors
+  useEffect(() => {
+    if (showReferenceDataError) {
+      notifications.show({
+        id: "reference-data-error",
+        title: "Error loading dropdown data",
+        message:
+          "Failed to load dropdown options. Some filters may be unavailable.",
+        color: "red",
+        autoClose: 5000,
+      });
+    }
+  }, [showReferenceDataError]);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -154,6 +233,75 @@ export function POSPage() {
     useProcessTransaction();
 
   const showCatalogError = !!error;
+
+  // Show notification for catalog errors
+  useEffect(() => {
+    if (showCatalogError && error) {
+      notifications.show({
+        id: "catalog-error",
+        title: "Error loading catalog",
+        message:
+          error?.message || "Failed to load catalog items. Please try again.",
+        color: "red",
+        autoClose: 5000,
+      });
+      setIsServerConnected(false);
+    }
+  }, [showCatalogError, error]);
+
+  // Health check and auto-retry connection (only when disconnected)
+  useEffect(() => {
+    // Only run health checks when server is disconnected
+    if (isServerConnected) {
+      return;
+    }
+
+    let mounted = true;
+    let healthCheckInterval: NodeJS.Timeout;
+
+    const checkHealth = async () => {
+      if (!mounted) return;
+
+      try {
+        setIsCheckingConnection(true);
+        await apiEndpoints.health.check();
+
+        if (mounted) {
+          // Server is back online - refetch data
+          setIsServerConnected(true);
+          notifications.show({
+            id: "server-reconnected",
+            title: "Connected to server",
+            message: "Connection restored. Refreshing data...",
+            color: "green",
+            autoClose: 3000,
+          });
+
+          // Refetch catalog data
+          await refetch();
+        }
+      } catch (error) {
+        if (mounted) {
+          setIsServerConnected(false);
+        }
+      } finally {
+        if (mounted) {
+          setIsCheckingConnection(false);
+        }
+      }
+    };
+
+    // Initial check
+    checkHealth();
+
+    // Poll every 10 seconds (only when disconnected)
+    healthCheckInterval = setInterval(checkHealth, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(healthCheckInterval);
+    };
+  }, [isServerConnected, refetch]);
 
   const filteredProducts =
     infiniteData?.pages?.flatMap((page) => page.data) || [];
@@ -222,8 +370,8 @@ export function POSPage() {
 
   const handlePaymentConfirm = useCallback(
     async (paymentData: {
-      paymentMethod: "Cash" | "GCash";
-      gcashReference?: string;
+      paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+      referenceNumber?: string;
       cashInHand?: number;
     }) => {
       if (!user || cart.isEmpty) return;
@@ -242,14 +390,30 @@ export function POSPage() {
 
         const transaction = await processTransaction(enhancedCartItems, {
           paymentMethod: paymentData.paymentMethod,
-          gcashReference: paymentData.gcashReference,
+          referenceNumber: paymentData.referenceNumber,
           cashInHand: paymentData.cashInHand,
+          seniorId: cart.discount.seniorId || undefined,
           regularDiscount: cart.discountAmounts.regularDiscountAmount,
           specialDiscount: cart.discountAmounts.specialDiscountAmount,
           subtotal: cart.subtotal,
           vat: cart.vat,
           total: cart.total,
         });
+
+        // Automatically print receipt if printer is configured
+        try {
+          const defaultPrinter = localStorage.getItem("defaultPrinter");
+          if (defaultPrinter && window.electronAPI) {
+            const escposData = generateReceiptESCPOS(transaction, settings);
+            await printEscposReceipt(defaultPrinter, Array.from(escposData));
+            console.log("Receipt printed successfully");
+          } else {
+            console.log("No printer configured or not running in Tauri");
+          }
+        } catch (printError) {
+          console.error("Failed to print receipt:", printError);
+          // Don't fail the transaction if printing fails
+        }
 
         alert(
           `✅ Transaction Completed!\n` +
@@ -273,11 +437,10 @@ export function POSPage() {
     [user, cart, filteredProducts, processTransaction, refetch]
   );
 
-  
   const getStockColor = (item: CatalogItem) => {
-    if (item.quantity === 0) return "red"; 
-    if (item.isLow) return "yellow"; 
-    return "green"; 
+    if (item.quantity === 0) return "red";
+    if (item.isLow) return "yellow";
+    return "green";
   };
 
   const productColumns: DataTableColumn<CatalogItem>[] = [
@@ -474,11 +637,9 @@ export function POSPage() {
       <Paper p="sm" shadow="sm" radius="md" withBorder>
         <Group justify="space-between">
           <Group>
-            <Title order={3}>OCT POS</Title>
+            <Title order={3}>{settings.storeName}</Title>
             <Badge color="blue" variant="light">
-              {typeof window !== "undefined" && window.__TAURI__
-                ? "Tauri"
-                : "Browser"}
+              {isTauri ? "Tauri" : "Browser"}
             </Badge>
             <Button
               variant="light"
@@ -534,6 +695,12 @@ export function POSPage() {
                 <Menu.Item leftSection={<IconUser size={14} />}>
                   Profile
                 </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconSettings size={14} />}
+                  onClick={() => setPrinterSettingsModalOpened(true)}
+                >
+                  Printer Settings
+                </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   leftSection={<IconLogout size={14} />}
@@ -548,7 +715,7 @@ export function POSPage() {
         </Group>
       </Paper>
     ),
-    [currentTime, user, navigate, dispatch]
+    [currentTime, user, navigate, dispatch, isTauri, settings.storeName]
   );
 
   const handleSearchChange = useCallback(
@@ -604,11 +771,6 @@ export function POSPage() {
   const filtersSection = useMemo(
     () => (
       <Paper p="sm" shadow="sm" radius="md" withBorder>
-        {showReferenceDataError && (
-          <Alert color="red" mb="sm" title="Error loading dropdown data">
-            Failed to load dropdown options. Some filters may be unavailable.
-          </Alert>
-        )}
         <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
           <div style={{ flex: "0 0 300px" }}>
             <TextInput
@@ -879,7 +1041,6 @@ export function POSPage() {
       itemTypeFilter,
       stockFilter,
       referenceData,
-      showReferenceDataError,
       handleSearchChange,
       handleProductTypeChange,
       handleFormulationChange,
@@ -899,12 +1060,6 @@ export function POSPage() {
         withBorder
         style={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
-        {showCatalogError && (
-          <Alert color="red" mb="sm" title="Error loading catalog">
-            {error?.message ||
-              "Failed to load catalog items. Please try again."}
-          </Alert>
-        )}
         <Group justify="space-between" mb="sm">
           <Text size="lg" fw={600}>
             Items
@@ -938,8 +1093,6 @@ export function POSPage() {
       </Paper>
     ),
     [
-      showCatalogError,
-      error,
       filteredProducts,
       totalCount,
       hasNextPage,
@@ -994,6 +1147,11 @@ export function POSPage() {
     [cart.items, cart.isEmpty, cart.clear, cartColumns]
   );
 
+  // Check if senior ID is required and missing
+  const isSeniorIdMissing =
+    cart.discount.discountName?.toLowerCase().includes("senior") &&
+    !cart.discount.seniorId?.trim();
+
   const transactionSummarySection = useMemo(
     () => (
       <Paper p="sm" shadow="sm" radius="md" withBorder>
@@ -1005,25 +1163,69 @@ export function POSPage() {
             <Text size="sm">Subtotal:</Text>
             <Text size="sm">{formatCurrency(cart.subtotal)}</Text>
           </Group>
-          <Group justify="space-between">
-            <Text size="sm">VAT (12%):</Text>
-            <Text size="sm">{formatCurrency(cart.vat)}</Text>
-          </Group>
-          <Group justify="space-between" align="center">
-            <Checkbox
-              label="Discounted (10%)"
-              checked={cart.discount.isRegularDiscounted}
-              onChange={(e) =>
-                cart.setDiscount({
-                  isRegularDiscounted: e.currentTarget.checked,
-                })
-              }
-              size="sm"
-            />
-            <Text size="sm" c="dimmed">
-              -{formatCurrency(cart.discountAmounts.regularDiscountAmount)}
-            </Text>
-          </Group>
+          {settings.showVat && cart.vat > 0 && (
+            <Group justify="space-between">
+              <Text size="sm">VAT ({settings.vatAmount}%):</Text>
+              <Text size="sm">{formatCurrency(cart.vat)}</Text>
+            </Group>
+          )}
+          <Stack gap="xs">
+            <Group justify="space-between" align="center" gap="xs">
+              <Select
+                placeholder="Select discount"
+                data={[
+                  { value: "", label: "No Discount" },
+                  ...discounts.map((d) => ({
+                    value: d.id,
+                    label: `${d.discountName} (${d.percent}%)`,
+                  })),
+                ]}
+                value={cart.discount.discountId || ""}
+                onChange={(value) => {
+                  const selectedDiscount = discounts.find(
+                    (d) => d.id === value
+                  );
+                  cart.setDiscount({
+                    discountId: value || null,
+                    discountPercent: selectedDiscount?.percent || 0,
+                    discountName: selectedDiscount?.discountName || null,
+                    seniorId: null, // Clear senior ID when discount changes
+                  });
+                }}
+                size="xs"
+                style={{ flex: 1 }}
+                clearable
+              />
+              <Text
+                size="sm"
+                c="dimmed"
+                style={{ minWidth: "70px", textAlign: "right" }}
+              >
+                -{formatCurrency(cart.discountAmounts.regularDiscountAmount)}
+              </Text>
+            </Group>
+            {cart.discount.discountName?.toLowerCase().includes("senior") && (
+              <TextInput
+                placeholder="Enter Senior Citizen ID"
+                value={cart.discount.seniorId || ""}
+                onChange={(e) =>
+                  cart.setDiscount({
+                    seniorId: e.currentTarget.value,
+                  })
+                }
+                size="xs"
+                maxLength={50}
+                required
+                styles={{
+                  input: {
+                    borderColor: !cart.discount.seniorId
+                      ? "var(--mantine-color-red-6)"
+                      : undefined,
+                  },
+                }}
+              />
+            )}
+          </Stack>
           <Group justify="space-between" align="center" gap="xs">
             <Group gap="xs" align="center">
               <Text size="sm">Special Discount (₱):</Text>
@@ -1061,7 +1263,12 @@ export function POSPage() {
             size="md"
             leftSection={<IconCash size={16} />}
             onClick={handleConfirmTransaction}
-            disabled={cart.isEmpty || isProcessing || hasStockIssues}
+            disabled={
+              cart.isEmpty ||
+              isProcessing ||
+              hasStockIssues ||
+              isSeniorIdMissing
+            }
             loading={isProcessing}
             mt="sm"
           >
@@ -1069,6 +1276,8 @@ export function POSPage() {
               ? "Processing..."
               : hasStockIssues
               ? "Please recheck cart items"
+              : isSeniorIdMissing
+              ? "Enter Senior Citizen ID"
               : "Confirm Transaction"}
           </Button>
         </Stack>
@@ -1084,11 +1293,39 @@ export function POSPage() {
       cart.setDiscount,
       handleConfirmTransaction,
       hasStockIssues,
+      isSeniorIdMissing,
+      settings.showVat,
+      settings.vatAmount,
+      discounts,
     ]
   );
 
   return (
     <>
+      {!isServerConnected && (
+        <Paper
+          p="xs"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            backgroundColor: "#fff3cd",
+            borderBottom: "2px solid #ffc107",
+            borderRadius: 0,
+          }}
+        >
+          <Group justify="center" gap="xs">
+            <Loader size="xs" color="orange" />
+            <Text size="sm" fw={500} c="orange.8">
+              {isCheckingConnection
+                ? "Connecting to server..."
+                : "Server disconnected. Retrying..."}
+            </Text>
+          </Group>
+        </Paper>
+      )}
       <POSLayout
         header={headerSection}
         filters={filtersSection}
@@ -1186,6 +1423,12 @@ export function POSPage() {
       <TransactionListModal
         opened={transactionListModalOpened}
         onClose={() => setTransactionListModalOpened(false)}
+      />
+
+      {}
+      <PrinterSettingsModal
+        opened={printerSettingsModalOpened}
+        onClose={() => setPrinterSettingsModalOpened(false)}
       />
     </>
   );

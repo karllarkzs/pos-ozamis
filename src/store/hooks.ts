@@ -20,6 +20,14 @@ import {
   type UpdateQuantityPayload,
   type UpdateDiscountPayload,
 } from "./slices/cartSlice";
+import {
+  selectSettings,
+  selectStoreName,
+  selectVatAmount,
+  selectShowVat,
+  selectSettingsLoading,
+  selectLastFetched,
+} from "./slices/settingsSlice";
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
@@ -137,5 +145,25 @@ export const useCart = () => {
     canAdd,
     getItemQuantity,
     hasItem,
+  };
+};
+
+export const useSettings = () => {
+  const settings = useAppSelector(selectSettings);
+  const storeName = useAppSelector(selectStoreName);
+  const vatAmount = useAppSelector(selectVatAmount);
+  const showVat = useAppSelector(selectShowVat);
+  const isLoading = useAppSelector(selectSettingsLoading);
+  const lastFetched = useAppSelector(selectLastFetched);
+  const dispatch = useAppDispatch();
+
+  return {
+    settings,
+    storeName,
+    vatAmount,
+    showVat,
+    isLoading,
+    lastFetched,
+    dispatch,
   };
 };
