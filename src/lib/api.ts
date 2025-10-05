@@ -292,6 +292,7 @@ export interface ProductSummary {
   expiringSoonProducts: number;
   totalInventoryValue: number;
   categoriesCount: number;
+  philHealthProducts: number;
   productsByType: Record<string, number>;
 }
 

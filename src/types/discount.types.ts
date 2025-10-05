@@ -15,3 +15,4 @@ export interface DiscountRequest {
   isActive?: boolean;
 }
 
+

@@ -49,3 +49,4 @@ export interface CatalogFilters {
   pageSize?: number;
 }
 
+

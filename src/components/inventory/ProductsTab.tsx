@@ -35,6 +35,7 @@ import { DataTable, DataTableColumn } from "../DataTable";
 import {
   useInfiniteProducts,
   useProductsReferenceData,
+  useProductSummary,
 } from "../../hooks/api/useProducts";
 import { useDebounce } from "../../hooks/useDebounce";
 import type { Product, ProductFilters } from "../../lib/api";
@@ -51,6 +52,8 @@ interface ProductsTabProps {
 }
 
 export function ProductsTab({ onAddProduct }: ProductsTabProps) {
+  const { data: summary, refetch: refetchSummary } = useProductSummary();
+  const [isPhilHealth, setIsPhilHealth] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -88,6 +91,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
       isNoStock: isNoStock === null ? undefined : isNoStock,
       isExpired: isExpired === null ? undefined : isExpired,
       isExpiringSoon: isExpiringSoon === null ? undefined : isExpiringSoon,
+      isPhilHealth: isPhilHealth ? true : undefined,
       sortBy: sortBy as ProductFilters["sortBy"],
       sortDirection,
       pageSize: 50,
@@ -102,6 +106,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
       isNoStock,
       isExpired,
       isExpiringSoon,
+      isPhilHealth,
       sortBy,
       sortDirection,
     ]
@@ -669,7 +674,20 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         <div
           style={{ flexShrink: 0, marginTop: "0.5rem", marginBottom: "1rem" }}
         >
-          <ProductSummaryStats onFilterClick={handleFilterPreset} />
+          <ProductSummaryStats
+            onFilterClick={handleFilterPreset}
+            isPhilHealth={isPhilHealth}
+            onPhilHealthToggle={() => {
+              setIsPhilHealth((v) => {
+                const newVal = !v;
+                setTimeout(() => {
+                  refetchSummary();
+                  refetch();
+                }, 0);
+                return newVal;
+              });
+            }}
+          />
         </div>
       </div>
 

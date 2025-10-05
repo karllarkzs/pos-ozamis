@@ -8,16 +8,21 @@ import {
   IconClock,
   IconCurrencyPeso,
   IconAlertCircle,
+  IconHeartPlus,
 } from "@tabler/icons-react";
 import { useProductSummary } from "../hooks/api/useProducts";
 import { formatCurrency } from "../utils/currency";
 
 interface ProductSummaryStatsProps {
   onFilterClick?: (filterType: string) => void;
+  isPhilHealth?: boolean;
+  onPhilHealthToggle?: () => void;
 }
 
 export function ProductSummaryStats({
   onFilterClick,
+  isPhilHealth = false,
+  onPhilHealthToggle,
 }: ProductSummaryStatsProps) {
   const { data: summary, isLoading, error } = useProductSummary();
 
@@ -85,6 +90,42 @@ export function ProductSummaryStats({
           </Text>
           <Text size="xs" c="#495057">
             Total Products
+          </Text>
+        </Paper>
+        <Paper
+          p="xs"
+          radius="xl"
+          style={{
+            backgroundColor: isPhilHealth ? "#e03131" : "#f8f9fa",
+            color: isPhilHealth ? "#fff" : "#222",
+            border: isPhilHealth ? "1px solid #e03131" : "1px solid #eee",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            transition: "background 0.2s, color 0.2s",
+            boxShadow: isPhilHealth ? "0 2px 8px rgba(224,49,49,0.08)" : "none",
+            fontWeight: 500,
+            minWidth: 110,
+            justifyContent: "center",
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = "scale(0.98)";
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+          onClick={onPhilHealthToggle}
+        >
+          <IconHeartPlus size={16} color={isPhilHealth ? "#fff" : "#e03131"} />
+          <Text size="sm" fw={500} style={{ color: isPhilHealth ? "#fff" : "#e03131" }}>
+            {summary?.philHealthProducts || 0}
+          </Text>
+          <Text size="xs" style={{ color: isPhilHealth ? "#fff" : "#222" }}>
+            PhilHealth
           </Text>
         </Paper>
 

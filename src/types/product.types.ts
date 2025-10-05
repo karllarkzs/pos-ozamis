@@ -88,3 +88,4 @@ export interface ProductSummary {
   productsByType: Record<string, number>;
 }
 
+
