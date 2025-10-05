@@ -1552,12 +1552,11 @@ export function ReportsPage() {
           {}
           <div ref={printRef}>
             <div className="only-print">
+              <div className="print-company">
+                OCT PHARMA AND GENERAL MERCHANISE
+              </div>
               <div className="print-title">
                 Reports &amp; Analytics — {activeTabLabel}
-              </div>
-              <div className="print-subtitle">
-                {startDate ? new Date(startDate).toLocaleDateString() : ""} –{" "}
-                {endDate ? new Date(endDate).toLocaleDateString() : ""}
               </div>
             </div>
 
@@ -1615,9 +1614,6 @@ export function ReportsPage() {
               </Tabs.Panel>
             </Tabs>
 
-            <div className="only-print signature-spacer">
-              <div className="nothing-follows">— Nothing Follows —</div>
-            </div>
             <div className="only-print signature-fixed">
               <div className="signature-grid">
                 <div className="sig-box">
