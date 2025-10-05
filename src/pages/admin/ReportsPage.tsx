@@ -31,6 +31,7 @@ import {
   IconFileText,
   IconDownload,
   IconChartPie,
+  IconClipboardText,
   IconReceipt,
 } from "@tabler/icons-react";
 import { Global } from "@emotion/react";
@@ -47,6 +48,7 @@ import {
 import { formatCurrency } from "../../utils/currency";
 import { useReactToPrint } from "react-to-print";
 import { IconPrinter } from "@tabler/icons-react";
+import { TransactionsTab } from "../../components/reports/TransactionTable";
 
 export function ReportsPage() {
   const [activeTab, setActiveTab] = useState<string | null>("overview");
@@ -442,155 +444,6 @@ export function ReportsPage() {
                     />
                     <Text size="xs" c="dimmed" mt={4}>
                       {((product.revenue / maxRevenue) * 100).toFixed(1)}%
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Paper>
-      </Stack>
-    );
-  };
-
-  const TestsTab = () => {
-    const { data: tests, isLoading, error } = testsQuery;
-
-    if (isLoading) {
-      return (
-        <Center py="xl">
-          <Loader />
-        </Center>
-      );
-    }
-
-    if (error) {
-      return (
-        <Alert color="red" title="Error loading tests">
-          {error.message}
-        </Alert>
-      );
-    }
-
-    if (!tests || tests.length === 0) {
-      return (
-        <Alert color="blue" title="No Data">
-          No test performance data found for the selected date range.
-        </Alert>
-      );
-    }
-
-    const maxRevenue = Math.max(...tests.map((t: any) => t.revenue));
-
-    return (
-      <Stack gap="md">
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-          <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Total Tests Performed
-                </Text>
-                <Text fw={700} size="xl">
-                  {tests.reduce((sum: number, t: any) => sum + t.quantity, 0)}
-                </Text>
-              </div>
-              <ThemeIcon color="purple" variant="light" size="xl">
-                <IconTestPipe size="1.8rem" />
-              </ThemeIcon>
-            </Group>
-          </Paper>
-
-          <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Test Revenue
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(tests.reduce((sum, t) => sum + t.revenue, 0))}
-                </Text>
-              </div>
-              <ThemeIcon color="green" variant="light" size="xl">
-                <IconCurrencyPeso size="1.8rem" />
-              </ThemeIcon>
-            </Group>
-          </Paper>
-
-          <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Average Revenue per Test
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(
-                    tests.reduce((sum, t) => sum + t.revenue, 0) / tests.length
-                  )}
-                </Text>
-              </div>
-              <ThemeIcon color="teal" variant="light" size="xl">
-                <IconTrendingUp size="1.8rem" />
-              </ThemeIcon>
-            </Group>
-          </Paper>
-
-          <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Top Performing Test
-                </Text>
-                <Text fw={700} size="lg">
-                  {tests[0]?.name}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {tests[0]?.quantity} tests performed
-                </Text>
-              </div>
-              <ThemeIcon color="indigo" variant="light" size="xl">
-                <IconChartPie size="1.8rem" />
-              </ThemeIcon>
-            </Group>
-          </Paper>
-        </SimpleGrid>
-
-        <Paper withBorder>
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Rank</Table.Th>
-                <Table.Th>Test Name</Table.Th>
-                <Table.Th>Tests Performed</Table.Th>
-                <Table.Th>Revenue</Table.Th>
-                <Table.Th>Performance</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {tests.map((test, index) => (
-                <Table.Tr key={test.id}>
-                  <Table.Td>
-                    <Badge color={index < 3 ? "gold" : "gray"} variant="light">
-                      #{index + 1}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text fw={500}>{test.name}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text fw={500}>{test.quantity} tests</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text fw={500}>{formatCurrency(test.revenue)}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Progress
-                      value={(test.revenue / maxRevenue) * 100}
-                      size="sm"
-                      color={index < 3 ? "purple" : "blue"}
-                    />
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {((test.revenue / maxRevenue) * 100).toFixed(1)}%
                     </Text>
                   </Table.Td>
                 </Table.Tr>
@@ -1568,18 +1421,21 @@ export function ReportsPage() {
                 >
                   Sales Overview
                 </Tabs.Tab>
+                <Tabs.List grow>
+                  <Tabs.Tab
+                    value="transactions"
+                    leftSection={<IconClipboardText size={16} />}
+                  >
+                    Transactions
+                  </Tabs.Tab>
+                </Tabs.List>
                 <Tabs.Tab
                   value="products"
                   leftSection={<IconPackage size={16} />}
                 >
                   Sales by Product
                 </Tabs.Tab>
-                <Tabs.Tab
-                  value="tests"
-                  leftSection={<IconTestPipe size={16} />}
-                >
-                  Sales by Tests
-                </Tabs.Tab>
+
                 <Tabs.Tab
                   value="employees"
                   leftSection={<IconUsers size={16} />}
@@ -1596,13 +1452,14 @@ export function ReportsPage() {
               <Tabs.Panel value="overview" pt="md">
                 <SalesOverviewTab />
               </Tabs.Panel>
-
+              <Tabs.Panel value="transactions" pt="md">
+                <TransactionsTab
+                  startDateStr={startDateStr}
+                  endDateStr={endDateStr}
+                />
+              </Tabs.Panel>
               <Tabs.Panel value="products" pt="md">
                 <ProductsTab />
-              </Tabs.Panel>
-
-              <Tabs.Panel value="tests" pt="md">
-                <TestsTab />
               </Tabs.Panel>
 
               <Tabs.Panel value="employees" pt="md">

@@ -640,8 +640,18 @@ export interface TransactionListResponse {
     processedBy: string;
     cashierId: string;
     cashierName: string;
+
+    // --- NEW discount-related fields coming from backend list endpoint ---
+    subTotal: number;
+    regularDiscount: number;
+    specialDiscount: number;
+    discountAmount: number;
+    vatAmount: number;
+    // ---------------------------------------------------
+
     totalAmount: number;
-    paymentMethod: "Cash" | "GCash";
+    paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
+    referenceNumber?: string | null;
     isVoided: boolean;
     itemCount: number;
   }[];
