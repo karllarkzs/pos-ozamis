@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import type {
   Test,
@@ -38,7 +37,6 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("auth-token");
-      window.location.href = "/login";
     }
 
     if (!error.response) {
@@ -65,9 +63,9 @@ export interface CatalogItem {
 
 export interface Product {
   id: string;
-  barcode?: string | null; 
-  generic?: string | null; 
-  brand: string; 
+  barcode?: string | null;
+  generic?: string | null;
+  brand: string;
   type?: string | null;
   formulation?: string | null;
   category?: string | null;
@@ -99,11 +97,9 @@ export interface ProductResponse {
 }
 
 export interface ProductFilters {
-  
   page?: number;
   pageSize?: number;
 
-  
   searchTerm?: string;
   barcode?: string;
   brand?: string;
@@ -112,12 +108,10 @@ export interface ProductFilters {
   location?: string;
   batchNumber?: string;
 
-  
   category?: string;
   formulation?: string;
   type?: string;
 
-  
   isDiscountable?: boolean;
   isLowStock?: boolean;
   isNoStock?: boolean;
@@ -125,25 +119,21 @@ export interface ProductFilters {
   isExpiringSoon?: boolean;
   isDeleted?: boolean;
 
-  
   minRetailPrice?: number;
   maxRetailPrice?: number;
   minWholesalePrice?: number;
   maxWholesalePrice?: number;
 
-  
   minQuantity?: number;
   maxQuantity?: number;
   minMinimumStock?: number;
   maxMinimumStock?: number;
 
-  
   expirationDateFrom?: string;
   expirationDateTo?: string;
   createdFrom?: string;
   createdTo?: string;
 
-  
   sortBy?: string;
   sortDirection?: "asc" | "desc";
 }
@@ -162,40 +152,33 @@ export interface Reagent {
   reagentType: ReagentType;
   reagentTypeName: string;
 
-  
-  quantity: number; 
+  quantity: number;
   minimumStock: number;
   unitCost: number;
   expirationDate?: string | null;
   batchNumber?: string | null;
 
-  
-  currentCharges?: number; 
-  initialCharges?: number; 
-  totalCharges?: number; 
+  currentCharges?: number;
+  initialCharges?: number;
+  totalCharges?: number;
 
-  
   chargesPerUnit?: number;
 
-  
-  currentVolume?: number; 
-  initialVolume?: number; 
-  totalVolume?: number; 
+  currentVolume?: number;
+  initialVolume?: number;
+  totalVolume?: number;
 
-  
-  volume?: number; 
+  volume?: number;
   unitOfMeasure?: string;
 
-  
   isLowStock: boolean;
   isExpired: boolean;
   isExpiringSoon?: boolean;
   availableAmount: number;
-  totalAvailableAmount?: number; 
+  totalAvailableAmount?: number;
   displayUnit: string;
   usagePercentage?: number;
 
-  
   createdAt: string;
   updatedAt?: string | null;
   createdBy?: string | null;
@@ -213,27 +196,21 @@ export interface ReagentResponse {
 }
 
 export interface ReagentFilters {
-  
   page?: number;
   pageSize?: number;
 
-  
   searchTerm?: string;
   reagentType?: ReagentType;
   batchNumber?: string;
 
-  
   isLowStock?: boolean;
   isExpired?: boolean;
 
-  
   minUnitCost?: number;
   maxUnitCost?: number;
 
-  
   expiringSoonDays?: number;
 
-  
   sortBy?:
     | "name"
     | "reagentType"
@@ -249,26 +226,21 @@ export interface CreateReagentRequest {
   name: string;
   reagentType: ReagentType;
 
-  
-  quantity: number; 
+  quantity: number;
   minimumStock: number;
   unitCost: number;
   expirationDate?: string;
   batchNumber?: string;
 
-  
-  currentCharges?: number; 
-  initialCharges?: number; 
+  currentCharges?: number;
+  initialCharges?: number;
 
-  
   chargesPerUnit?: number;
 
-  
-  currentVolume?: number; 
-  initialVolume?: number; 
+  currentVolume?: number;
+  initialVolume?: number;
 
-  
-  volume?: number; 
+  volume?: number;
   unitOfMeasure?: string;
 }
 
@@ -287,10 +259,10 @@ export interface ReagentSummary {
 }
 
 export interface UpdateStockRequest {
-  quantityChange?: number; 
-  currentChargesChange?: number; 
-  currentVolumeChange?: number; 
-  volumeChange?: number; 
+  quantityChange?: number;
+  currentChargesChange?: number;
+  currentVolumeChange?: number;
+  volumeChange?: number;
   reason?: string;
   batchNumber?: string;
 }
@@ -513,6 +485,46 @@ export interface CreateExpenseRequest {
   }[];
 }
 
+export type UserRole = "SuperAdmin" | "Admin" | "Cashier" | "Lab";
+
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+}
+
+export interface User {
+  id: string;
+  userName: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  photoUrl?: string | null;
+  hasPhoto: boolean;
+  profile: UserProfile;
+}
+
+export interface CreateUserRequest {
+  userName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+}
+
+export interface UpdateUserRequest {
+  userName?: string;
+  email?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  firstName?: string;
+  lastName?: string;
+}
+
 export interface CatalogResponse {
   data: CatalogItem[];
   page: number;
@@ -665,7 +677,6 @@ export interface TransactionStatistics {
 
 export interface VoidTransactionRequest {
   voidReason: string;
-  voidedBy: string;
 }
 
 export interface RestockBatchItem {
@@ -681,12 +692,10 @@ export interface RestockBatchItem {
   notes?: string | null;
   wasNewItemCreated: boolean;
 
-  
   productGeneric?: string | null;
   productBrand?: string | null;
   productType?: string | null;
 
-  
   reagentName?: string | null;
   reagentTypeName?: string | null;
   chargesPerUnit?: number | null;
@@ -722,11 +731,9 @@ export interface CreateRestockBatchRequest {
 export interface CreateRestockBatchItemRequest {
   itemType: "Product" | "Reagent";
 
-  
   productId?: string | null;
   reagentId?: string | null;
 
-  
   generic?: string;
   brand?: string;
   barcode?: string;
@@ -737,14 +744,12 @@ export interface CreateRestockBatchItemRequest {
   minimumStock?: number;
   isDiscountable?: boolean;
 
-  
   reagentName?: string;
-  reagentType?: 0 | 1; 
+  reagentType?: 0 | 1;
   unitOfMeasure?: string;
   chargesPerUnit?: number;
   volume?: number;
 
-  
   quantity: number;
   wholesalePrice: number;
   retailPrice: number;
@@ -796,11 +801,10 @@ export interface RestockBatchSummary {
 }
 
 export interface RestockQueueItem {
-  id: string; 
+  id: string;
   itemType: "Product" | "Reagent";
-  originalItem: Product | Reagent; 
+  originalItem: Product | Reagent;
 
-  
   quantity: number;
   retailPrice: number;
   wholesalePrice: number;
@@ -808,9 +812,8 @@ export interface RestockQueueItem {
   supplierBatchNumber?: string | null;
   notes?: string | null;
 
-  
-  hasFieldChanges: boolean; 
-  shouldCreateNew: boolean; 
+  hasFieldChanges: boolean;
+  shouldCreateNew: boolean;
 }
 
 export interface TransactionFilters {
@@ -844,7 +847,6 @@ const buildQueryString = (filters: CatalogFilters): string => {
 
 export const apiEndpoints = {
   tests: {
-    
     getAll: (filters?: TestFilters) => {
       const params = new URLSearchParams();
       if (filters) {
@@ -860,7 +862,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) =>
       api.get<{ success: boolean; message: string; data: Test }>(
         `/tests/${id}`
@@ -881,7 +882,6 @@ export const apiEndpoints = {
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/tests/${id}`),
 
-    
     canPerform: (id: string) =>
       api.get<{
         success: boolean;
@@ -889,20 +889,17 @@ export const apiEndpoints = {
         data: { testId: string; canPerform: boolean };
       }>(`/tests/${id}/can-perform`),
 
-    
     perform: (id: string, data: PerformTestRequest) =>
       api.post<{ success: boolean; message: string; data: Test }>(
         `/tests/${id}/perform`,
         data
       ),
 
-    
     getSummary: () =>
       api.get<{ success: boolean; message: string; data: TestSummary }>(
         "/tests/summary"
       ),
 
-    
     getCannotPerform: (filters?: TestFilters) => {
       const params = new URLSearchParams();
       if (filters) {
@@ -1018,7 +1015,6 @@ export const apiEndpoints = {
   },
 
   products: {
-    
     getAll: (filters?: ProductFilters) => {
       const params = new URLSearchParams();
 
@@ -1036,7 +1032,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) =>
       api.get<{ success: boolean; message: string; data: Product }>(
         `/products/${id}`
@@ -1054,7 +1049,6 @@ export const apiEndpoints = {
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/products/${id}`),
 
-    
     getByBarcode: (barcode: string) =>
       api.get<{ success: boolean; message: string; data: Product }>(
         `/products/by-barcode/${barcode}`
@@ -1062,10 +1056,8 @@ export const apiEndpoints = {
     getAllByBarcode: (barcode: string) =>
       api.get<Product[]>(`/products/by-barcode/${barcode}/all`),
 
-    
     getSummary: () => api.get<ProductSummary>("/products/summary"),
 
-    
     getLowStock: (filters?: ProductFilters) => {
       const params = new URLSearchParams();
       if (filters) {
@@ -1126,7 +1118,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getForRestock: (filters?: ProductFilters) => {
       const params = new URLSearchParams();
       if (filters) {
@@ -1142,14 +1133,12 @@ export const apiEndpoints = {
       );
     },
 
-    
     getLowStockSimple: () => api.get<Product[]>("/products/low-stock/simple"),
     getNoStockSimple: () => api.get<Product[]>("/products/no-stock/simple"),
     getExpiredSimple: () => api.get<Product[]>("/products/expired/simple"),
     getExpiringSoonSimple: () =>
       api.get<Product[]>("/products/expiring-soon/simple"),
 
-    
     updateStock: (id: string, data: { quantity: number; reason?: string }) =>
       api.patch<{ success: boolean; message: string; data: Product }>(
         `/products/${id}/stock`,
@@ -1178,7 +1167,6 @@ export const apiEndpoints = {
         }>;
       }>("/products/stock/bulk", data),
 
-    
     checkExists: (criteria: {
       barcode?: string;
       brand?: string;
@@ -1204,7 +1192,6 @@ export const apiEndpoints = {
       }>(`/products/check-exists`, criteria);
     },
 
-    
     createBatch: (data: {
       products: Array<Partial<Product>>;
       validateDuplicates?: boolean;
@@ -1228,7 +1215,6 @@ export const apiEndpoints = {
       }>("/products/batch", data);
     },
 
-    
     deleteBatch: (data: { productIds: string[]; reason?: string }) => {
       return api.delete<{
         totalRequested: number;
@@ -1251,7 +1237,6 @@ export const apiEndpoints = {
       }>("/products/batch", { data });
     },
 
-    
     getProductTypes: () => api.get<string[]>("/products/types"),
     getFormulations: () => api.get<string[]>("/products/formulations"),
     getCategories: () => api.get<string[]>("/products/categories"),
@@ -1259,9 +1244,7 @@ export const apiEndpoints = {
   },
 
   reports: {
-    
     dashboard: {
-      
       overview: (filters?: {
         period?: string;
         startDate?: string;
@@ -1284,7 +1267,6 @@ export const apiEndpoints = {
       },
     },
 
-    
     financial: {
       getReport: (filters: {
         startDate: string;
@@ -1307,7 +1289,6 @@ export const apiEndpoints = {
         api.get<FinancialReport>(`/reports/financial/monthly/${year}/${month}`),
     },
 
-    
     inventory: {
       movement: (filters: { startDate: string; endDate: string }) => {
         const params = new URLSearchParams();
@@ -1367,7 +1348,6 @@ export const apiEndpoints = {
         api.get<InventoryAlert[]>("/reports/inventory/overstock-items"),
     },
 
-    
     transactions: {
       topSellingProducts: (filters: {
         startDate: string;
@@ -1418,7 +1398,6 @@ export const apiEndpoints = {
       },
     },
 
-    
     profit: {
       margin: (filters: { startDate: string; endDate: string }) => {
         const params = new URLSearchParams();
@@ -1452,7 +1431,6 @@ export const apiEndpoints = {
   },
 
   reagents: {
-    
     getAll: (filters?: ReagentFilters) => {
       const params = new URLSearchParams();
 
@@ -1470,7 +1448,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) =>
       api.get<{ success: boolean; message: string; data: Reagent }>(
         `/reagents/${id}`
@@ -1496,14 +1473,12 @@ export const apiEndpoints = {
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/reagents/${id}`),
 
-    
     updateStock: (id: string, stockData: UpdateStockRequest) =>
       api.post<{ success: boolean; message: string; data: Reagent }>(
         `/reagents/${id}/update-stock`,
         stockData
       ),
 
-    
     getLowStock: () =>
       api.get<{ success: boolean; data: Reagent[] }>("/reagents/low-stock"),
 
@@ -1521,10 +1496,8 @@ export const apiEndpoints = {
     getVolumeBased: () =>
       api.get<{ success: boolean; data: Reagent[] }>("/reagents/volume-based"),
 
-    
     getSummary: () => api.get<ReagentSummary>("/reagents/summary"),
 
-    
     getForRestock: (filters?: { page?: number; pageSize?: number }) => {
       const params = new URLSearchParams();
       if (filters) {
@@ -1545,7 +1518,6 @@ export const apiEndpoints = {
       }>(`/reagents/for-restock${queryString ? `?${queryString}` : ""}`);
     },
 
-    
     createBatch: (data: {
       reagents: Array<{
         name: string;
@@ -1580,7 +1552,6 @@ export const apiEndpoints = {
       }>("/reagents/batch", data);
     },
 
-    
     editBatch: (data: {
       reagentUpdates: Record<
         string,
@@ -1614,7 +1585,6 @@ export const apiEndpoints = {
       }>("/reagents/batch", data);
     },
 
-    
     deleteBatch: (data: { reagentIds: string[]; reason?: string }) => {
       return api.delete<{
         success: boolean;
@@ -1637,7 +1607,6 @@ export const apiEndpoints = {
       }>("/reagents/batch", { data });
     },
 
-    
     recordMaintenanceConsumption: (data: MaintenanceConsumptionRequest) =>
       api.post<{ success: boolean; message: string }>(
         "/reagents/maintenance-consumption",
@@ -1645,9 +1614,7 @@ export const apiEndpoints = {
       ),
   },
 
-  
   expenses: {
-    
     getAll: (params?: {
       pageNumber?: number;
       pageSize?: number;
@@ -1669,21 +1636,16 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) => api.get<Expense>(`/expenses/${id}`),
 
-    
     create: (expense: CreateExpenseRequest) =>
       api.post<Expense>("/expenses", expense),
 
-    
     update: (id: string, expense: Partial<CreateExpenseRequest>) =>
       api.put<Expense>(`/expenses/${id}`, expense),
 
-    
     delete: (id: string) => api.delete(`/expenses/${id}`),
 
-    
     getStatistics: (params?: { startDate?: string; endDate?: string }) => {
       const searchParams = new URLSearchParams();
       if (params) {
@@ -1699,7 +1661,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getByCategory: (params?: { startDate?: string; endDate?: string }) => {
       const searchParams = new URLSearchParams();
       if (params) {
@@ -1715,7 +1676,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getCategories: () =>
       api.get<{
         categories: string[];
@@ -1723,7 +1683,6 @@ export const apiEndpoints = {
         suggestedCategories: string[];
       }>("/expenses/categories"),
 
-    
     getByUser: (
       userId: string,
       params?: { startDate?: string; endDate?: string }
@@ -1749,7 +1708,6 @@ export const apiEndpoints = {
       }>(`/expenses/by-user/${userId}${queryString ? `?${queryString}` : ""}`);
     },
 
-    
     getByPurchaser: (
       purchasedBy: string,
       params?: { startDate?: string; endDate?: string }
@@ -1778,7 +1736,6 @@ export const apiEndpoints = {
   },
 
   restockBatches: {
-    
     create: (batch: CreateRestockBatchRequest) =>
       api.post<{
         success: boolean;
@@ -1786,7 +1743,6 @@ export const apiEndpoints = {
         data: RestockBatch;
       }>("/restock-batches", batch),
 
-    
     getAll: (filters?: RestockBatchFilters) => {
       const params = new URLSearchParams();
 
@@ -1804,7 +1760,6 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) =>
       api.get<{
         success: boolean;
@@ -1812,7 +1767,6 @@ export const apiEndpoints = {
         data: RestockBatch;
       }>(`/restock-batches/${id}`),
 
-    
     getByReference: (batchReference: string) =>
       api.get<{
         success: boolean;
@@ -1820,7 +1774,6 @@ export const apiEndpoints = {
         data: RestockBatch;
       }>(`/restock-batches/by-reference/${batchReference}`),
 
-    
     update: (
       id: string,
       updates: { notes?: string; supplierReference?: string }
@@ -1831,10 +1784,8 @@ export const apiEndpoints = {
         data: RestockBatch;
       }>(`/restock-batches/${id}`, updates),
 
-    
     delete: (id: string) => api.delete(`/restock-batches/${id}`),
 
-    
     getItems: (id: string) =>
       api.get<{
         success: boolean;
@@ -1842,7 +1793,6 @@ export const apiEndpoints = {
         data: RestockBatchItem[];
       }>(`/restock-batches/${id}/items`),
 
-    
     getSummary: (params?: { from?: string; to?: string }) => {
       const queryParams = new URLSearchParams();
       if (params) {
@@ -1860,7 +1810,6 @@ export const apiEndpoints = {
       }>(`/restock-batches/summary${queryString ? `?${queryString}` : ""}`);
     },
 
-    
     getRecent: (params?: { days?: number } & RestockBatchFilters) => {
       const queryParams = new URLSearchParams();
       if (params) {
@@ -1877,21 +1826,17 @@ export const apiEndpoints = {
       );
     },
 
-    
     getTopByValue: (limit: number = 10) =>
       api.get<{
         success: boolean;
         data: RestockBatch[];
       }>(`/restock-batches/top-by-value?limit=${limit}`),
 
-    
     getCompanies: () => api.get<string[]>("/restock-batches/companies"),
 
-    
     getReceivedByUsers: () =>
       api.get<string[]>("/restock-batches/received-by-users"),
 
-    
     getByCompany: (company: string) =>
       api.get<{
         success: boolean;
@@ -1900,7 +1845,6 @@ export const apiEndpoints = {
   },
 
   transactions: {
-    
     getAll: (filters?: TransactionFilters) => {
       const params = new URLSearchParams();
 
@@ -1918,14 +1862,11 @@ export const apiEndpoints = {
       );
     },
 
-    
     getById: (id: string) => api.get<Transaction>(`/transactions/${id}`),
 
-    
     getByReceiptNumber: (receiptNumber: string) =>
       api.get<Transaction>(`/transactions/receipt/${receiptNumber}`),
 
-    
     create: (transaction: CreateTransactionRequest) =>
       api.post<{
         success: boolean;
@@ -1933,7 +1874,6 @@ export const apiEndpoints = {
         data: Transaction;
       }>("/transactions", transaction),
 
-    
     void: (id: string, voidRequest: VoidTransactionRequest) =>
       api.post<{
         success: boolean;
@@ -1941,7 +1881,6 @@ export const apiEndpoints = {
         data: Transaction;
       }>(`/transactions/${id}/void`, voidRequest),
 
-    
     getStatistics: (params?: { startDate?: string; endDate?: string }) => {
       const queryParams = new URLSearchParams();
       if (params) {
@@ -1957,5 +1896,26 @@ export const apiEndpoints = {
         `/transactions/statistics${queryString ? `?${queryString}` : ""}`
       );
     },
+  },
+
+  users: {
+    getAll: (includeInactive: boolean = false) =>
+      api.get<User[]>(`/users?includeInactive=${includeInactive}`),
+
+    getById: (id: string) => api.get<User>(`/users/${id}`),
+
+    create: (userData: CreateUserRequest) => api.post<User>("/users", userData),
+
+    update: (id: string, userData: UpdateUserRequest) =>
+      api.put<User>(`/users/${id}`, userData),
+
+    delete: (id: string) => api.delete(`/users/${id}`),
+
+    activate: (id: string) => api.patch<User>(`/users/${id}/activate`),
+
+    deactivate: (id: string) => api.patch<User>(`/users/${id}/deactivate`),
+
+    changePassword: (id: string, newPassword: string) =>
+      api.put<{ message: string }>(`/users/${id}/password`, { newPassword }),
   },
 };

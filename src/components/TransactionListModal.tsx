@@ -52,7 +52,6 @@ function getTodayDateRange() {
     999
   );
 
-  
   const formatLocalDate = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -96,10 +95,8 @@ export function TransactionListModal({
   >(null);
   const voidTransaction = useVoidTransaction();
 
-  
   const todayRange = useMemo(() => getTodayDateRange(), []);
 
-  
   const {
     data,
     isLoading,
@@ -116,7 +113,6 @@ export function TransactionListModal({
     pageSize: 50,
   });
 
-  
   const { data: selectedTransaction } = useTransaction(
     selectedTransactionId || "",
     {
@@ -124,17 +120,14 @@ export function TransactionListModal({
     }
   );
 
-  
   const transactions = useMemo(() => {
     return data?.pages.flatMap((page) => page.data) || [];
   }, [data]);
 
-  
   const handleRowClick = useCallback((transaction: TransactionListItem) => {
     setSelectedTransactionId(transaction.id);
   }, []);
 
-  
   const handlePrint = useCallback((transaction: Transaction) => {
     console.log("=== PRINTING RECEIPT ===");
     console.log("Transaction:", transaction);
@@ -148,7 +141,6 @@ export function TransactionListModal({
     });
   }, []);
 
-  
   const handleVoid = useCallback(
     (transaction: Transaction) => {
       if (transaction.isVoided) {
@@ -166,11 +158,11 @@ export function TransactionListModal({
         children: (
           <VoidConfirmationDialog
             transaction={transaction}
-            onConfirm={async (voidReason: string, voidedBy: string) => {
+            onConfirm={async (voidReason: string) => {
               try {
                 await voidTransaction.mutateAsync({
                   id: transaction.id,
-                  voidRequest: { voidReason, voidedBy },
+                  voidRequest: { voidReason },
                 });
 
                 notifications.show({
@@ -199,7 +191,6 @@ export function TransactionListModal({
     [voidTransaction, refetch]
   );
 
-  
   const columns: DataTableColumn<TransactionListItem>[] = useMemo(
     () => [
       {
@@ -288,7 +279,6 @@ export function TransactionListModal({
     []
   );
 
-  
   const getRowStyle = useCallback(
     (item: TransactionListItem): React.CSSProperties => ({
       backgroundColor:
@@ -634,10 +624,9 @@ function VoidConfirmationDialog({
   onConfirm,
 }: {
   transaction: Transaction;
-  onConfirm: (voidReason: string, voidedBy: string) => Promise<void>;
+  onConfirm: (voidReason: string) => Promise<void>;
 }) {
   const [voidReason, setVoidReason] = useState("");
-  const [voidedBy, setVoidedBy] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleConfirm = async () => {
@@ -650,18 +639,9 @@ function VoidConfirmationDialog({
       return;
     }
 
-    if (!voidedBy.trim()) {
-      notifications.show({
-        title: "Validation Error",
-        message: "Please enter your name",
-        color: "red",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await onConfirm(voidReason.trim(), voidedBy.trim());
+      await onConfirm(voidReason.trim());
     } finally {
       setIsSubmitting(false);
     }
@@ -691,15 +671,6 @@ function VoidConfirmationDialog({
         onChange={(e) => setVoidReason(e.currentTarget.value)}
       />
 
-      <TextInput
-        label="Your Name"
-        placeholder="Enter your name"
-        required
-        maxLength={100}
-        value={voidedBy}
-        onChange={(e) => setVoidedBy(e.currentTarget.value)}
-      />
-
       <Group justify="flex-end" gap="sm">
         <Button variant="subtle" onClick={() => modals.closeAll()}>
           Cancel
@@ -708,7 +679,7 @@ function VoidConfirmationDialog({
           color="red"
           onClick={handleConfirm}
           loading={isSubmitting}
-          disabled={!voidReason.trim() || !voidedBy.trim()}
+          disabled={!voidReason.trim()}
         >
           Void Transaction
         </Button>

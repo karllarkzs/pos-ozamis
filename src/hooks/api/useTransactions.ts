@@ -46,7 +46,7 @@ export function useInfiniteTransactions(
         ? lastPage.pagination.pageNumber + 1
         : undefined;
     },
-    staleTime: 30 * 1000, 
+    staleTime: 30 * 1000,
   });
 }
 
@@ -57,7 +57,7 @@ export function useTransactions(filters?: TransactionFilters) {
       const response = await apiEndpoints.transactions.getAll(filters);
       return response.data;
     },
-    staleTime: 30 * 1000, 
+    staleTime: 30 * 1000,
   });
 }
 
@@ -69,7 +69,7 @@ export function useTransaction(id: string, options?: { enabled?: boolean }) {
       return response.data;
     },
     enabled: options?.enabled !== undefined ? options.enabled : !!id,
-    staleTime: 60 * 1000, 
+    staleTime: 60 * 1000,
   });
 }
 
@@ -83,7 +83,7 @@ export function useTransactionByReceipt(receiptNumber: string) {
       return response.data;
     },
     enabled: !!receiptNumber,
-    staleTime: 60 * 1000, 
+    staleTime: 60 * 1000,
   });
 }
 
@@ -95,10 +95,9 @@ export function useCreateTransaction() {
       transaction: CreateTransactionRequest
     ): Promise<Transaction> => {
       const response = await apiEndpoints.transactions.create(transaction);
-      return response.data.data;
+      return response.data.data || response.data;
     },
     onSuccess: () => {
-      
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
     },
@@ -117,10 +116,9 @@ export function useVoidTransaction() {
       voidRequest: VoidTransactionRequest;
     }): Promise<Transaction> => {
       const response = await apiEndpoints.transactions.void(id, voidRequest);
-      return response.data.data;
+      return response.data.data || response.data;
     },
     onSuccess: (_, { id }) => {
-      
       queryClient.invalidateQueries({ queryKey: transactionKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
@@ -138,6 +136,6 @@ export function useTransactionStatistics(params?: {
       const response = await apiEndpoints.transactions.getStatistics(params);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
   });
 }

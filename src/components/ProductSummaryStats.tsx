@@ -21,7 +21,6 @@ export function ProductSummaryStats({
 }: ProductSummaryStatsProps) {
   const { data: summary, isLoading, error } = useProductSummary();
 
-  
   useEffect(() => {
     if (error) {
       notifications.show({
@@ -78,6 +77,7 @@ export function ProductSummaryStats({
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "scale(1)";
           }}
+          onClick={() => handleChipClick("all")}
         >
           <IconPackage size={16} color="#1971c2" />
           <Text size="sm" fw={500} c="#1971c2">
@@ -232,26 +232,6 @@ export function ProductSummaryStats({
           </Text>
           <Text size="xs" c="#495057">
             Expiring Soon
-          </Text>
-        </Paper>
-
-        <Paper
-          p="xs"
-          radius="xl"
-          style={{
-            backgroundColor: "#e6fcf5",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            cursor: "default",
-          }}
-        >
-          <IconCurrencyPeso size={16} color="#37b24d" />
-          <Text size="sm" fw={500} c="#37b24d">
-            {summary ? formatCurrency(summary.totalInventoryValue) : "₱0.00"}
-          </Text>
-          <Text size="xs" c="#495057">
-            Total Value
           </Text>
         </Paper>
       </Group>

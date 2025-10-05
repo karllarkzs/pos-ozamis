@@ -3,6 +3,7 @@ export * from "./useTransactions";
 export * from "./useProducts";
 export * from "./useReagents";
 export * from "./useReports";
+export * from "./useUsers";
 export {
   useEmployeeSales,
   useExpenseAnalysis,
@@ -41,7 +42,6 @@ export type {
   MaintenanceConsumptionRequest,
   TestReagentRequirement,
   ReagentType,
-  
   DashboardOverview,
   TopItem,
   FinancialReport,
@@ -49,11 +49,15 @@ export type {
   InventoryMovementItem,
   InventoryAlert,
   ReportFilters,
-  
   Expense,
   ExpenseItem,
   ExpenseListResponse,
   ExpenseStatistics,
   ExpenseByCategory,
   CreateExpenseRequest,
+  User,
+  UserRole,
+  UserProfile,
+  CreateUserRequest,
+  UpdateUserRequest,
 } from "../../lib/api";

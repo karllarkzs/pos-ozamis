@@ -7,12 +7,13 @@ import {
   ActionIcon,
   Badge,
   Divider,
-  Grid,
   Tooltip,
   Select,
+  Text,
+  Paper,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-import { IconTrash, IconFlask, IconDroplet } from "@tabler/icons-react";
+import { IconTrash, IconFlask } from "@tabler/icons-react";
 import type { Reagent } from "../lib/api";
 
 type ReagentFormData = {
@@ -37,6 +38,22 @@ interface ReagentEntryCardProps {
   showRemove?: boolean;
 }
 
+const reagentTypeOptions = [
+  { value: "ChargeBased", label: "Charge Based (Discrete Units with Charges)" },
+  { value: "VolumeBased", label: "Volume Based (Containers with Volume)" },
+];
+
+const unitOfMeasureOptions = [
+  "mL",
+  "L",
+  "g",
+  "kg",
+  "oz",
+  "lb",
+  "units",
+  "drops",
+].map((unit) => ({ value: unit, label: unit }));
+
 export function ReagentEntryCard({
   reagent,
   index,
@@ -50,20 +67,17 @@ export function ReagentEntryCard({
     reagent.reagentType === "ChargeBased" ||
     reagent.reagentType === "charge-based";
 
+  const reagentTypeValue = isChargeBased ? "ChargeBased" : "VolumeBased";
+
   return (
     <Card withBorder padding="md" radius="md" shadow="sm">
       <Stack gap="md">
-        {/* Header */}
         <Group justify="space-between" align="center">
           <Group gap="xs">
-            {isChargeBased ? (
-              <IconFlask size={20} color="var(--mantine-color-blue-6)" />
-            ) : (
-              <IconDroplet size={20} color="var(--mantine-color-teal-6)" />
-            )}
-            <Badge color={isChargeBased ? "blue" : "teal"} variant="light">
-              {isChargeBased ? "Charge-Based" : "Volume-Based"}
-            </Badge>
+            <IconFlask size={20} />
+            <Text fw={600} size="sm">
+              Reagent #{index + 1}
+            </Text>
           </Group>
           {showRemove && (
             <Tooltip label="Remove Reagent">
@@ -78,117 +92,166 @@ export function ReagentEntryCard({
           )}
         </Group>
 
-        <Divider />
+        <Paper p="md" withBorder>
+          <Stack gap="md">
+            <Group justify="space-between" align="center">
+              <Text fw={500} size="sm">
+                Basic Information
+              </Text>
+              <Badge
+                color={isChargeBased ? "blue" : "green"}
+                variant="light"
+                size="sm"
+              >
+                {isChargeBased ? "Charge Based" : "Volume Based"}
+              </Badge>
+            </Group>
+            <Divider />
 
-        {/* Basic Info */}
-        <Grid>
-          <Grid.Col span={12}>
-            <TextInput
-              label="Reagent Name"
-              placeholder="e.g., Blood Sugar Test Strip"
-              value={reagent.name}
-              onChange={(e) => onUpdate(index, "name", e.currentTarget.value)}
-              error={errors[`reagents.${index}.name`]}
-              required
-            />
-          </Grid.Col>
+            <Group grow>
+              <TextInput
+                label="Reagent Name"
+                placeholder="Enter reagent name"
+                value={reagent.name}
+                onChange={(e) => onUpdate(index, "name", e.currentTarget.value)}
+                error={errors[`reagents.${index}.name`]}
+                required
+              />
+              <Select
+                label="Reagent Type"
+                placeholder="Select type"
+                value={reagentTypeValue}
+                onChange={(value) =>
+                  onUpdate(
+                    index,
+                    "reagentType",
+                    value === "ChargeBased" ? 0 : 1
+                  )
+                }
+                data={reagentTypeOptions}
+                required
+              />
+            </Group>
+          </Stack>
+        </Paper>
 
-          <Grid.Col span={6}>
+        <Paper p="md" withBorder>
+          <Stack gap="md">
+            <Text fw={500} size="sm">
+              {isChargeBased
+                ? "Charge-Based Configuration"
+                : "Volume-Based Configuration"}
+            </Text>
+            <Divider />
+
             <NumberInput
               label="Quantity (Unopened Containers)"
-              placeholder="Number of unopened containers"
+              placeholder="Number of unopened containers on shelf"
+              description="Number of unopened containers/boxes/bottles on shelf"
               value={reagent.quantity}
               onChange={(value) => onUpdate(index, "quantity", value)}
               error={errors[`reagents.${index}.quantity`]}
-              min={0}
+              min={1}
               required
             />
-          </Grid.Col>
 
-          {isChargeBased ? (
-            <Grid.Col span={6}>
+            {isChargeBased && (
               <NumberInput
                 label="Current Charges (Opened Container)"
-                placeholder="Charges in opened container"
+                placeholder="Charges in currently opened container"
+                description="Charges left in the currently opened box/container"
                 value={reagent.currentCharges}
                 onChange={(value) => onUpdate(index, "currentCharges", value)}
                 error={errors[`reagents.${index}.currentCharges`]}
-                min={0}
+                min={1}
                 required
               />
-            </Grid.Col>
-          ) : (
-            <>
-              <Grid.Col span={3}>
+            )}
+
+            {!isChargeBased && (
+              <Group grow>
                 <NumberInput
-                  label="Current Volume (Opened)"
-                  placeholder="Volume"
+                  label="Volume (Opened Container)"
+                  placeholder="Volume in currently opened container"
+                  description="Volume left in the currently opened bottle/container"
                   value={reagent.currentVolume}
                   onChange={(value) => onUpdate(index, "currentVolume", value)}
                   error={errors[`reagents.${index}.currentVolume`]}
-                  min={0}
+                  min={0.01}
                   decimalScale={2}
                   required
                 />
-              </Grid.Col>
-              <Grid.Col span={3}>
                 <Select
-                  label="Unit"
-                  placeholder="Unit"
+                  label="Unit of Measure"
+                  placeholder="Select unit"
                   value={reagent.unitOfMeasure}
                   onChange={(value) =>
                     onUpdate(index, "unitOfMeasure", value || "mL")
                   }
-                  data={["mL", "L", "g", "kg", "oz", "lb", "units", "drops"]}
+                  data={unitOfMeasureOptions}
                   required
                 />
-              </Grid.Col>
-            </>
-          )}
+              </Group>
+            )}
+          </Stack>
+        </Paper>
 
-          <Grid.Col span={6}>
-            <NumberInput
-              label="Minimum Stock"
-              placeholder="Low stock threshold"
-              value={reagent.minimumStock}
-              onChange={(value) => onUpdate(index, "minimumStock", value)}
-              error={errors[`reagents.${index}.minimumStock`]}
-              min={1}
-              required
-            />
-          </Grid.Col>
+        <Paper p="md" withBorder>
+          <Stack gap="md">
+            <Text fw={500} size="sm">
+              Stock & Cost Information
+            </Text>
+            <Divider />
 
-          <Grid.Col span={6}>
-            <NumberInput
-              label="Unit Cost (₱)"
-              placeholder="Cost per container"
-              value={reagent.unitCost}
-              onChange={(value) => onUpdate(index, "unitCost", value)}
-              error={errors[`reagents.${index}.unitCost`]}
-              min={0.01}
-              max={999999.99}
-              decimalScale={2}
-              fixedDecimalScale
-              required
-            />
-          </Grid.Col>
+            <Group grow>
+              <NumberInput
+                label="Minimum Stock"
+                placeholder="Enter minimum stock"
+                value={reagent.minimumStock}
+                onChange={(value) => onUpdate(index, "minimumStock", value)}
+                error={errors[`reagents.${index}.minimumStock`]}
+                min={1}
+                required
+              />
+              <NumberInput
+                label="Unit Cost (₱)"
+                placeholder="Enter unit cost"
+                value={reagent.unitCost}
+                onChange={(value) => onUpdate(index, "unitCost", value)}
+                error={errors[`reagents.${index}.unitCost`]}
+                min={0.01}
+                max={999999.99}
+                decimalScale={2}
+                required
+              />
+            </Group>
+          </Stack>
+        </Paper>
 
-          <Grid.Col span={6}>
-            <DateInput
-              label="Expiration Date"
-              placeholder="Select expiration date"
-              value={
-                reagent.expirationDate ? new Date(reagent.expirationDate) : null
-              }
-              onChange={(value) =>
-                onUpdate(index, "expirationDate", value?.toISOString())
-              }
-              error={errors[`reagents.${index}.expirationDate`]}
-            />
-          </Grid.Col>
+        <Paper p="md" withBorder>
+          <Stack gap="md">
+            <Text fw={500} size="sm">
+              Additional Information
+            </Text>
+            <Divider />
 
-          <Grid.Col span={6}></Grid.Col>
-        </Grid>
+            <Group grow>
+              <DateInput
+                label="Expiration Date"
+                placeholder="Select expiration date"
+                value={
+                  reagent.expirationDate
+                    ? new Date(reagent.expirationDate)
+                    : null
+                }
+                onChange={(value) =>
+                  onUpdate(index, "expirationDate", value?.toISOString())
+                }
+                error={errors[`reagents.${index}.expirationDate`]}
+              />
+            </Group>
+          </Stack>
+        </Paper>
       </Stack>
     </Card>
   );
