@@ -60,4 +60,5 @@ export type {
   UserProfile,
   CreateUserRequest,
   UpdateUserRequest,
+  SalesSummary,
 } from "../../lib/api";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Container,
   Title,
@@ -33,6 +33,7 @@ import {
   IconChartPie,
   IconReceipt,
 } from "@tabler/icons-react";
+import { Global } from "@emotion/react";
 import {
   useTopSellingProducts,
   useTopPerformingTests,
@@ -41,20 +42,30 @@ import {
   useExpensesByCategory,
   useExpensesList,
   useExpenseCategories,
+  useSalesSummary,
 } from "../../hooks/api/useReports";
 import { formatCurrency } from "../../utils/currency";
+import { useReactToPrint } from "react-to-print";
+import { IconPrinter } from "@tabler/icons-react";
 
 export function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<string | null>("products");
+  const [activeTab, setActiveTab] = useState<string | null>("overview");
+  const tabLabelMap: Record<string, string> = {
+    overview: "Sales Overview",
+    products: "Sales by Product",
+    tests: "Sales by Tests",
+    employees: "Sales by Employee",
+    expenses: "Expenses",
+  };
+  const activeTabLabel = activeTab ? tabLabelMap[activeTab] ?? activeTab : "";
 
-  
-  const [startDate, setStartDate] = useState<Date | null>(new Date()); 
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
 
-  
   const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
 
-  
+  const printRef = useRef<HTMLDivElement>(null);
+
   const formatDateLocal = (date: Date | null): string => {
     if (!date) return "";
     const year = date.getFullYear();
@@ -63,16 +74,13 @@ export function ReportsPage() {
     return `${year}-${month}-${day}`;
   };
 
-  
   const startDateStr = formatDateLocal(startDate);
   const endDateStr = formatDateLocal(endDate);
 
-  
   const productsQuery = useTopSellingProducts(startDateStr, endDateStr, 50);
   const testsQuery = useTopPerformingTests(startDateStr, endDateStr, 50);
   const employeeQuery = useEmployeeSales(startDateStr, endDateStr);
 
-  
   const expenseStatsQuery = useExpenseStatistics(startDateStr, endDateStr);
   const expensesByCategoryQuery = useExpensesByCategory(
     startDateStr,
@@ -80,7 +88,6 @@ export function ReportsPage() {
   );
   const expenseCategoriesQuery = useExpenseCategories();
 
-  
   const detectPeriodFromDates = (
     start: Date | null,
     end: Date | null
@@ -96,7 +103,6 @@ export function ReportsPage() {
     );
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-    
     if (
       startDate.getTime() === today.getTime() &&
       endDate.getTime() === today.getTime()
@@ -104,7 +110,6 @@ export function ReportsPage() {
       return "today";
     }
 
-    
     const dayOfWeek = now.getDay();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - dayOfWeek);
@@ -121,7 +126,6 @@ export function ReportsPage() {
       return "thisWeek";
     }
 
-    
     const prevWeekEnd = new Date(now);
     prevWeekEnd.setDate(now.getDate() - now.getDay() - 1);
     const prevWeekEndDate = new Date(
@@ -144,7 +148,6 @@ export function ReportsPage() {
       return "previousWeek";
     }
 
-    
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     if (
       startDate.getTime() === startOfMonth.getTime() &&
@@ -153,7 +156,6 @@ export function ReportsPage() {
       return "thisMonth";
     }
 
-    
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
     const prevMonthStartDate = new Date(
@@ -174,7 +176,6 @@ export function ReportsPage() {
       return "previousMonth";
     }
 
-    
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     if (
       startDate.getTime() === startOfYear.getTime() &&
@@ -183,7 +184,6 @@ export function ReportsPage() {
       return "thisYear";
     }
 
-    
     const prevYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const prevYearEnd = new Date(now.getFullYear() - 1, 11, 31);
     const prevYearStartDate = new Date(
@@ -212,7 +212,7 @@ export function ReportsPage() {
 
     setSelectedPeriod(period);
 
-    if (period === "custom") return; 
+    if (period === "custom") return;
 
     const now = new Date();
 
@@ -232,9 +232,9 @@ export function ReportsPage() {
 
       case "previousWeek":
         const prevWeekEnd = new Date(now);
-        prevWeekEnd.setDate(now.getDate() - now.getDay() - 1); 
+        prevWeekEnd.setDate(now.getDate() - now.getDay() - 1);
         const prevWeekStart = new Date(prevWeekEnd);
-        prevWeekStart.setDate(prevWeekEnd.getDate() - 6); 
+        prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
         setStartDate(prevWeekStart);
         setEndDate(prevWeekEnd);
         break;
@@ -250,7 +250,7 @@ export function ReportsPage() {
           now.getMonth() - 1,
           1
         );
-        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); 
+        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
         setStartDate(prevMonthStart);
         setEndDate(prevMonthEnd);
         break;
@@ -279,14 +279,28 @@ export function ReportsPage() {
       setEndDate(date);
     }
 
-    
     const newStartDate = isStartDate ? date : startDate;
     const newEndDate = isStartDate ? endDate : date;
     const detectedPeriod = detectPeriodFromDates(newStartDate, newEndDate);
     setSelectedPeriod(detectedPeriod);
   };
 
-  
+  const pageStyles = `
+  @page { size: A4; margin: 14mm; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .print-container { max-width: 100% !important; padding: 0 !important; }
+    .mantine-Paper-root { box-shadow: none !important; }
+    .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+  }
+`;
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef, // <-- v3 API
+    pageStyle: pageStyles,
+  });
+
   const ProductsTab = () => {
     const { data: products, isLoading, error } = productsQuery;
 
@@ -439,7 +453,6 @@ export function ReportsPage() {
     );
   };
 
-  
   const TestsTab = () => {
     const { data: tests, isLoading, error } = testsQuery;
 
@@ -589,7 +602,6 @@ export function ReportsPage() {
     );
   };
 
-  
   const EmployeesTab = () => {
     const { data: employees, isLoading, error } = employeeQuery;
 
@@ -861,11 +873,9 @@ export function ReportsPage() {
     );
   };
 
-  
   const ExpensesTab = () => {
     const [selectedCategory, setSelectedCategory] = useState<string>("");
 
-    
     const {
       data: expensesList,
       isLoading: listLoading,
@@ -875,7 +885,6 @@ export function ReportsPage() {
       pageSize: 20,
     });
 
-    
     const expenseStats = expenseStatsQuery.data;
     const expensesByCategory = expensesByCategoryQuery.data;
     const categories = expenseCategoriesQuery.data;
@@ -1203,106 +1212,427 @@ export function ReportsPage() {
       </Stack>
     );
   };
+  const SalesOverviewTab = () => {
+    const { data, isLoading, error } = useSalesSummary(
+      selectedPeriod,
+      startDateStr,
+      endDateStr
+    );
 
-  return (
-    <Container size="xl" py="md">
-      <Stack gap="lg">
-        {}
+    if (isLoading) {
+      return (
+        <Center py="xl">
+          <Loader />
+        </Center>
+      );
+    }
+
+    if (error) {
+      return (
+        <Alert color="red" title="Error loading sales summary">
+          {(error as any).message || "Failed to load"}
+        </Alert>
+      );
+    }
+
+    if (!data) {
+      return (
+        <Alert color="blue" title="No Data">
+          No sales summary found for the selected date range.
+        </Alert>
+      );
+    }
+
+    // payment method totals
+    const totalPmTx =
+      (data.cashTransactions || 0) +
+      (data.gcashTransactions || 0) +
+      (data.mayaTransactions || 0) +
+      (data.goTymeTransactions || 0);
+
+    const totalPmAmt =
+      (data.cashSales || 0) +
+      (data.gcashSales || 0) +
+      (data.mayaSales || 0) +
+      (data.goTymeSales || 0);
+
+    return (
+      <Stack gap="md">
         <Group justify="space-between" align="center">
-          <Title order={1}>Reports & Analytics</Title>
-          <Button leftSection={<IconDownload size={16} />} variant="light">
-            Export Data
-          </Button>
+          <Text fw={600} size="lg">
+            {data.periodLabel}
+          </Text>
+          <Badge variant="light" color="gray">
+            {new Date(data.startDate).toLocaleDateString()} –{" "}
+            {new Date(data.endDate).toLocaleDateString()}
+          </Badge>
         </Group>
 
-        {}
-        <Paper withBorder p="md">
-          <Group justify="space-between" align="center" wrap="wrap">
-            <Group align="center" gap="md">
-              <Group align="center" gap="sm">
-                <IconCalendar size={20} />
-                <Text fw={500}>Period:</Text>
-                <Select
-                  value={selectedPeriod}
-                  onChange={handlePeriodChange}
-                  data={[
-                    { value: "today", label: "Today" },
-                    { value: "thisWeek", label: "This Week" },
-                    { value: "previousWeek", label: "Previous Week" },
-                    { value: "thisMonth", label: "This Month" },
-                    { value: "previousMonth", label: "Previous Month" },
-                    { value: "thisYear", label: "This Year" },
-                    { value: "previousYear", label: "Previous Year" },
-                    { value: "custom", label: "Custom" },
-                  ]}
-                  w={160}
-                  size="sm"
-                />
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+          {/* LEFT: Overall totals */}
+          <Paper p="md" withBorder>
+            <Stack gap="sm">
+              <Group justify="space-between">
+                <Text c="dimmed" size="sm" fw={700}>
+                  Gross Sales
+                </Text>
+                <Text fw={800}>{formatCurrency(data.grossSales)}</Text>
               </Group>
 
-              <Group align="center" gap="sm">
-                <Text fw={500} c="dimmed">
-                  Date Range:
+              <Group justify="space-between">
+                <Text c="dimmed" size="sm" fw={700}>
+                  Discounts
                 </Text>
-                <DatePickerInput
-                  placeholder="Start date"
-                  value={startDate}
-                  onChange={(date) => handleDateChange(date, true)}
-                  maxDate={endDate || undefined}
-                  w={120}
-                  size="sm"
-                  valueFormat="MMM D, YYYY"
-                />
-                <Text c="dimmed">to</Text>
-                <DatePickerInput
-                  placeholder="End date"
-                  value={endDate}
-                  onChange={(date) => handleDateChange(date, false)}
-                  minDate={startDate || undefined}
-                  maxDate={new Date()}
-                  w={120}
-                  size="sm"
-                  valueFormat="MMM D, YYYY"
-                />
+                <Text fw={800} c="red">
+                  {formatCurrency(data.totalDiscounts)}
+                </Text>
+              </Group>
+
+              <Group justify="space-between">
+                <Text c="dimmed" size="sm" fw={700}>
+                  Total Expenses
+                </Text>
+                <Text fw={800} c="red">
+                  {formatCurrency(data.totalExpenses)}
+                </Text>
+              </Group>
+
+              <Group justify="space-between">
+                <Text c="dimmed" size="sm" fw={700}>
+                  Net Sales
+                </Text>
+                <Text fw={800} c="green">
+                  {formatCurrency(data.netSales)}
+                </Text>
+              </Group>
+            </Stack>
+          </Paper>
+
+          {/* RIGHT: Payment methods with totals row */}
+          <Paper p="md" withBorder>
+            <Text fw={600} mb="sm">
+              Payment Methods
+            </Text>
+            <Table withTableBorder withColumnBorders>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Method</Table.Th>
+                  <Table.Th ta="right">Transactions</Table.Th>
+                  <Table.Th ta="right">Amount</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {[
+                  {
+                    label: "Cash",
+                    tx: data.cashTransactions,
+                    amt: data.cashSales,
+                    color: "green",
+                  },
+                  {
+                    label: "GCash",
+                    tx: data.gcashTransactions,
+                    amt: data.gcashSales,
+                    color: "blue",
+                  },
+                  {
+                    label: "Maya",
+                    tx: data.mayaTransactions,
+                    amt: data.mayaSales,
+                    color: "indigo",
+                  },
+                  {
+                    label: "GoTyme",
+                    tx: data.goTymeTransactions,
+                    amt: data.goTymeSales,
+                    color: "violet",
+                  },
+                ].map((row) => (
+                  <Table.Tr key={row.label}>
+                    <Table.Td>
+                      <Badge variant="outline" color={row.color}>
+                        {row.label}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td ta="right">
+                      <Text fw={600}>{row.tx ?? 0}</Text>
+                    </Table.Td>
+                    <Table.Td ta="right">
+                      <Text fw={700}>{formatCurrency(row.amt ?? 0)}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+              <Table.Tfoot>
+                <Table.Tr>
+                  <Table.Th>Total</Table.Th>
+                  <Table.Th ta="right">
+                    <Text fw={700}>{totalPmTx.toLocaleString()}</Text>
+                  </Table.Th>
+                  <Table.Th ta="right">
+                    <Text fw={800}>{formatCurrency(totalPmAmt)}</Text>
+                  </Table.Th>
+                </Table.Tr>
+              </Table.Tfoot>
+            </Table>
+          </Paper>
+        </SimpleGrid>
+
+        {/* BOTTOM: transactions column only */}
+        <Stack gap="md">
+          <Paper p="md" withBorder>
+            <Group justify="space-between">
+              <Text c="dimmed" fw={700} size="sm">
+                Total Sales Transactions
+              </Text>
+              <Text fw={800}>{data.nonDiscountedTransactions}</Text>
+            </Group>
+          </Paper>
+
+          <Paper p="md" withBorder>
+            <Group justify="space-between">
+              <Text c="dimmed" fw={700} size="sm">
+                Discounted Transactions
+              </Text>
+              <Text fw={800}>{data.discountedTransactions}</Text>
+            </Group>
+          </Paper>
+
+          <Paper p="md" withBorder>
+            <Group justify="space-between">
+              <Text c="dimmed" fw={700} size="sm">
+                Voided Transactions
+              </Text>
+              <Text fw={800}>{data.voidedTransactions}</Text>
+            </Group>
+          </Paper>
+
+          <Paper p="md" withBorder>
+            <Group justify="space-between">
+              <Text c="dimmed" fw={700} size="sm">
+                Overall Transactions
+              </Text>
+              <Text fw={800}>{data.totalTransactions}</Text>
+            </Group>
+          </Paper>
+        </Stack>
+      </Stack>
+    );
+  };
+
+  return (
+    <>
+      <Global
+        styles={`
+          @page { size: A4; margin: 14mm; }
+
+          @media print {
+            html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { font-size: 12.5px; }           /* restores the tighter, cleaner type */
+            .no-print { display: none !important; }
+            .only-print { display: block !important; }
+
+            /* keep the in-app look */
+            .print-container { max-width: 1200px !important; margin: 0 auto !important; padding: 0 24px !important; }
+            .mantine-Paper-root { background: #fff !important; border: 1px solid var(--mantine-color-gray-3) !important; box-shadow: none !important; }
+            .mantine-Table-table, .mantine-Table-thead, .mantine-Table-tbody, .mantine-Table-tfoot,
+            .mantine-Table-tr, .mantine-Table-th, .mantine-Table-td { border-color: var(--mantine-color-gray-3) !important; }
+            .mantine-Tabs-list { display: none !important; }
+            h1,h2,h3,h4,h5,h6 { break-after: avoid; }
+            .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+
+            /* ---- PRINT HEADER (company + report title + dates) ---- */
+            .print-company { text-align: center; font-weight: 800; font-size: 18px; letter-spacing: .3px; margin: 0 0 4px; }
+            .print-title   { text-align: center; font-weight: 700; font-size: 16px; margin: 0 0 4px; }
+            .print-subtitle{ text-align: center; color: var(--mantine-color-gray-7); margin-bottom: 12px; }
+
+            /* ---- SIGNATURES pinned to bottom (safe for page 1) ---- */
+            .signature-fixed {
+              position: fixed;
+              left: 14mm; right: 14mm; bottom: 14mm;   /* aligns to @page margins */
+              break-inside: avoid; page-break-inside: avoid;
+            }
+
+            /* Reserve space so fixed footer won't overlap content */
+            .signature-spacer {
+              height: 44mm;                             /* tune if you change footer height */
+              display: flex; align-items: flex-end; justify-content: center;
+            }
+
+            /* “Nothing Follows” styling */
+            .nothing-follows {
+              font-size: 11px; color: var(--mantine-color-gray-7);
+              text-align: center; width: 100%;
+              display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+            }
+            .nothing-follows::before, .nothing-follows::after {
+              content: ""; flex: 1; height: 1px; background: var(--mantine-color-gray-4);
+            }
+
+            /* Signature grid */
+            .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+            .sig-box  { padding-top: 8px; }
+            .sig-line { border-top: 1px solid var(--mantine-color-gray-6); margin-top: 22px; }
+            .sig-label{ font-size: 12px; color: var(--mantine-color-gray-7); }
+          }
+
+          .only-print { display: none; }
+        `}
+      />
+
+      <Container size="xl" py="md" className="print-container">
+        <Stack gap="lg">
+          {/* Top row */}
+          <Group justify="space-between" align="center">
+            <Title order={1}>Reports & Analytics</Title>
+            <Button
+              leftSection={<IconPrinter size={16} />}
+              variant="light"
+              onClick={handlePrint}
+              className="no-print"
+            >
+              Print Report
+            </Button>
+          </Group>
+
+          {}
+          <Paper withBorder p="md">
+            <Group justify="space-between" align="center" wrap="wrap">
+              <Group align="center" gap="md">
+                <Group align="center" gap="sm">
+                  <IconCalendar size={20} />
+                  <Text fw={500}>Period:</Text>
+                  <Select
+                    value={selectedPeriod}
+                    onChange={handlePeriodChange}
+                    data={[
+                      { value: "today", label: "Today" },
+                      { value: "thisWeek", label: "This Week" },
+                      { value: "previousWeek", label: "Previous Week" },
+                      { value: "thisMonth", label: "This Month" },
+                      { value: "previousMonth", label: "Previous Month" },
+                      { value: "thisYear", label: "This Year" },
+                      { value: "previousYear", label: "Previous Year" },
+                      { value: "custom", label: "Custom" },
+                    ]}
+                    w={160}
+                    size="sm"
+                  />
+                </Group>
+
+                <Group align="center" gap="sm">
+                  <Text fw={500} c="dimmed">
+                    Date Range:
+                  </Text>
+                  <DatePickerInput
+                    placeholder="Start date"
+                    value={startDate}
+                    onChange={(date) => handleDateChange(date, true)}
+                    maxDate={endDate || undefined}
+                    w={120}
+                    size="sm"
+                    valueFormat="MMM D, YYYY"
+                  />
+                  <Text c="dimmed">to</Text>
+                  <DatePickerInput
+                    placeholder="End date"
+                    value={endDate}
+                    onChange={(date) => handleDateChange(date, false)}
+                    minDate={startDate || undefined}
+                    maxDate={new Date()}
+                    w={120}
+                    size="sm"
+                    valueFormat="MMM D, YYYY"
+                  />
+                </Group>
               </Group>
             </Group>
-          </Group>
-        </Paper>
+          </Paper>
 
-        {}
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List grow>
-            <Tabs.Tab value="products" leftSection={<IconPackage size={16} />}>
-              Sales by Product
-            </Tabs.Tab>
-            <Tabs.Tab value="tests" leftSection={<IconTestPipe size={16} />}>
-              Sales by Tests
-            </Tabs.Tab>
-            <Tabs.Tab value="employees" leftSection={<IconUsers size={16} />}>
-              Sales by Employee
-            </Tabs.Tab>
-            <Tabs.Tab value="expenses" leftSection={<IconFileText size={16} />}>
-              Expenses
-            </Tabs.Tab>
-          </Tabs.List>
+          {}
+          <div ref={printRef}>
+            <div className="only-print">
+              <div className="print-title">
+                Reports &amp; Analytics — {activeTabLabel}
+              </div>
+              <div className="print-subtitle">
+                {startDate ? new Date(startDate).toLocaleDateString() : ""} –{" "}
+                {endDate ? new Date(endDate).toLocaleDateString() : ""}
+              </div>
+            </div>
 
-          <Tabs.Panel value="products" pt="md">
-            <ProductsTab />
-          </Tabs.Panel>
+            <Tabs value={activeTab} onChange={setActiveTab}>
+              <Tabs.List grow>
+                <Tabs.Tab
+                  value="overview"
+                  leftSection={<IconTrendingUp size={16} />}
+                >
+                  Sales Overview
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="products"
+                  leftSection={<IconPackage size={16} />}
+                >
+                  Sales by Product
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="tests"
+                  leftSection={<IconTestPipe size={16} />}
+                >
+                  Sales by Tests
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="employees"
+                  leftSection={<IconUsers size={16} />}
+                >
+                  Sales by Employee
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="expenses"
+                  leftSection={<IconFileText size={16} />}
+                >
+                  Expenses
+                </Tabs.Tab>
+              </Tabs.List>
+              <Tabs.Panel value="overview" pt="md">
+                <SalesOverviewTab />
+              </Tabs.Panel>
 
-          <Tabs.Panel value="tests" pt="md">
-            <TestsTab />
-          </Tabs.Panel>
+              <Tabs.Panel value="products" pt="md">
+                <ProductsTab />
+              </Tabs.Panel>
 
-          <Tabs.Panel value="employees" pt="md">
-            <EmployeesTab />
-          </Tabs.Panel>
+              <Tabs.Panel value="tests" pt="md">
+                <TestsTab />
+              </Tabs.Panel>
 
-          <Tabs.Panel value="expenses" pt="md">
-            <ExpensesTab />
-          </Tabs.Panel>
-        </Tabs>
-      </Stack>
-    </Container>
+              <Tabs.Panel value="employees" pt="md">
+                <EmployeesTab />
+              </Tabs.Panel>
+
+              <Tabs.Panel value="expenses" pt="md">
+                <ExpensesTab />
+              </Tabs.Panel>
+            </Tabs>
+
+            <div className="only-print signature-spacer">
+              <div className="nothing-follows">— Nothing Follows —</div>
+            </div>
+            <div className="only-print signature-fixed">
+              <div className="signature-grid">
+                <div className="sig-box">
+                  <div className="sig-line"></div>
+                  <Text className="sig-label">Reported by:</Text>
+                </div>
+                <div className="sig-box">
+                  <div className="sig-line"></div>
+                  <Text className="sig-label">Received by:</Text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Stack>
+      </Container>
+    </>
   );
 }

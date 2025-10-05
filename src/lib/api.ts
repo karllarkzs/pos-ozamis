@@ -854,6 +854,49 @@ export interface TransactionFilters {
   sortDirection?: "asc" | "desc";
 }
 
+export interface SalesSummary {
+  startDate: string;
+  endDate: string;
+  periodLabel: string;
+
+  totalTransactions: number;
+  voidedTransactions: number;
+  discountedTransactions: number;
+  nonDiscountedTransactions: number;
+  voidRate: number;
+
+  grossSales: number;
+  totalDiscounts: number;
+  amountVoided: number;
+  netSales: number;
+  vatCollected: number;
+
+  totalExpenses: number;
+  netSalesAfterExpenses: number;
+  totalCost: number;
+  grossProfit: number;
+  grossProfitMargin: number;
+
+  cashSales: number;
+  gcashSales: number;
+  mayaSales: number;
+  goTymeSales: number;
+
+  cashTransactions: number;
+  gcashTransactions: number;
+  mayaTransactions: number;
+  goTymeTransactions: number;
+
+  dailyBreakdown: any[];
+}
+
+export interface SalesSummaryResponse {
+  data: SalesSummary;
+  filters: { period?: string; startDate?: string; endDate?: string };
+  generatedAt: string;
+  generatedBy?: string;
+}
+
 const buildQueryString = (filters: CatalogFilters): string => {
   const params = new URLSearchParams();
 
@@ -1452,6 +1495,23 @@ export const apiEndpoints = {
           `/reports/profit/by-product-type?${params.toString()}`
         );
       },
+    },
+  },
+
+  businessReports: {
+    salesSummary: (filters?: {
+      period?: string;
+      startDate?: string;
+      endDate?: string;
+    }) => {
+      const params = new URLSearchParams();
+      if (filters?.period) params.append("period", filters.period);
+      if (filters?.startDate) params.append("startDate", filters.startDate);
+      if (filters?.endDate) params.append("endDate", filters.endDate);
+      const qs = params.toString();
+      return api.get<SalesSummaryResponse>(
+        `/business-reports/sales-summary${qs ? `?${qs}` : ""}`
+      );
     },
   },
 

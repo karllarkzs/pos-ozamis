@@ -9,6 +9,7 @@ import {
   TopItem,
   DailyBreakdown,
   ReportFilters,
+  SalesSummary,
 } from "../../lib/api";
 
 export const reportKeys = {
@@ -47,7 +48,10 @@ export const reportKeys = {
   profitByProductType: (filters: any) =>
     [...reportKeys.profit(), "by-product-type", filters] as const,
 
-  
+  business: () => [...reportKeys.all, "business"] as const,
+  businessSalesSummary: (filters: any) =>
+    [...reportKeys.business(), "sales-summary", filters] as const,
+
   employees: () => [...reportKeys.all, "employees"] as const,
   employeeSales: (filters: any) =>
     [...reportKeys.employees(), "sales", filters] as const,
@@ -71,9 +75,9 @@ export function useDashboardOverview(
       });
       return response.data;
     },
-    staleTime: 0, 
-    refetchOnMount: "always", 
-    refetchOnWindowFocus: true, 
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -88,9 +92,9 @@ export function useDashboardOverviewCustom(startDate: string, endDate: string) {
       });
       return response.data;
     },
-    staleTime: 0, 
-    refetchOnMount: "always", 
-    refetchOnWindowFocus: true, 
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     enabled: !!startDate && !!endDate,
   });
 }
@@ -158,11 +162,11 @@ export function useInventoryAlerts() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 30 * 1000, 
+    refetchInterval: 30 * 1000,
   });
 
   const expiring = useQuery({
-    queryKey: reportKeys.inventoryExpiring(30), 
+    queryKey: reportKeys.inventoryExpiring(30),
     queryFn: async (): Promise<InventoryAlert[]> => {
       const response = await apiEndpoints.reports.inventory.expiringItems(30);
       return response.data;
@@ -170,7 +174,7 @@ export function useInventoryAlerts() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 30 * 1000, 
+    refetchInterval: 30 * 1000,
   });
 
   const expired = useQuery({
@@ -182,7 +186,7 @@ export function useInventoryAlerts() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 30 * 1000, 
+    refetchInterval: 30 * 1000,
   });
 
   return { lowStock, expiring, expired };
@@ -387,22 +391,19 @@ export function useEmployeeSales(startDate: string, endDate: string) {
         transactions: any[];
       }[]
     > => {
-      
-      
       const response = await apiEndpoints.transactions.getAll({
         startDate,
         endDate,
-        pageSize: 1000, 
+        pageSize: 1000,
       });
 
-      
       const employeeMap = new Map();
       response.data.data.forEach((transaction: any) => {
         const key = transaction.processedBy;
         if (!employeeMap.has(key)) {
           employeeMap.set(key, {
             employeeId: key,
-            employeeName: key, 
+            employeeName: key,
             totalSales: 0,
             totalTransactions: 0,
             itemsSold: 0,
@@ -417,12 +418,10 @@ export function useEmployeeSales(startDate: string, endDate: string) {
         emp.transactions.push(transaction);
       });
 
-      
       return Array.from(employeeMap.values())
         .map((emp) => ({
           ...emp,
           averageTransactionValue: emp.totalSales / emp.totalTransactions || 0,
-          
         }))
         .sort((a, b) => b.totalSales - a.totalSales);
     },
@@ -447,7 +446,6 @@ export function useExpenseAnalysis(startDate: string, endDate: string) {
         percentage: number;
       }[];
     }> => {
-      
       const response = await apiEndpoints.reports.financial.getReport({
         startDate,
         endDate,
@@ -460,7 +458,7 @@ export function useExpenseAnalysis(startDate: string, endDate: string) {
       return {
         totalCOGS: financial.totalCOGS,
         totalDiscounts: financial.totalDiscounts,
-        vatPaid: financial.vatCollected, 
+        vatPaid: financial.vatCollected,
         operatingExpenses: totalExpenses,
         expenseBreakdown: [
           {
@@ -560,7 +558,7 @@ export function useExpenseCategories(enabled: boolean = true) {
       return response.data;
     },
     enabled: enabled,
-    staleTime: 30 * 60 * 1000, 
+    staleTime: 30 * 60 * 1000,
   });
 }
 
@@ -580,5 +578,33 @@ export function useExpensesByPurchaser(
     },
     enabled: !!purchasedBy,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSalesSummary(
+  selectedPeriod: string,
+  startDate?: string,
+  endDate?: string
+) {
+  const isCustom = selectedPeriod === "custom";
+
+  return useQuery({
+    queryKey: reportKeys.businessSalesSummary({
+      period: selectedPeriod,
+      startDate: isCustom ? startDate : undefined,
+      endDate: isCustom ? endDate : undefined,
+    }),
+    queryFn: async (): Promise<SalesSummary> => {
+      const resp = await apiEndpoints.businessReports.salesSummary({
+        period: isCustom ? undefined : selectedPeriod,
+        startDate: isCustom ? startDate : undefined,
+        endDate: isCustom ? endDate : undefined,
+      });
+      return resp.data.data; // unwrap to the core payload
+    },
+    enabled: isCustom ? !!startDate && !!endDate : !!selectedPeriod,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
