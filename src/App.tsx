@@ -29,13 +29,8 @@ import { apiEndpoints } from "./lib/api";
 
 function RoleBasedRedirect() {
   const { user } = useAuth();
-
-  if (!user) {
-    return <Navigate to="/pos" replace />;
-  }
-
-  const defaultRoute = getDefaultRouteForRole(user.role);
-  return <Navigate to={defaultRoute} replace />;
+  if (!user) return <Navigate to="/" replace />;
+  return <Navigate to={getDefaultRouteForRole(user.role) || "/"} replace />;
 }
 
 function App() {
@@ -266,7 +261,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/forbidden" element={<ForbiddenPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       )}
