@@ -8,7 +8,6 @@ export function UpdateNotification() {
 
   useEffect(() => {
     const unsubscribe = onUpdateReady((version) => {
-      console.log("Update ready for version:", version);
       setUpdateVersion(version);
     });
 
@@ -18,9 +17,7 @@ export function UpdateNotification() {
   const handleRestart = async () => {
     try {
       await restartApp();
-    } catch (error) {
-      console.error("Failed to restart app:", error);
-    }
+    } catch (error) {}
   };
 
   const handleClose = () => {

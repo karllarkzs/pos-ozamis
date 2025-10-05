@@ -79,7 +79,7 @@ type TransactionListItem = {
   cashierId: string;
   cashierName: string;
   totalAmount: number;
-  paymentMethod: "Cash" | "GCash";
+  paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme";
   isVoided: boolean;
   itemCount: number;
 };
@@ -155,10 +155,6 @@ export function TransactionListModal({
 
   const handlePrint = useCallback(
     async (transaction: Transaction) => {
-      console.log("=== REPRINTING RECEIPT ===");
-      console.log("Transaction:", transaction);
-      console.log("Running in Tauri:", isTauri);
-
       if (!isTauri) {
         notifications.show({
           title: "Printing Not Available",
@@ -188,13 +184,6 @@ export function TransactionListModal({
       }
 
       try {
-        console.log("Current settings:", settings);
-        console.log("Settings object:", settings.settings);
-        console.log("Store name:", settings.settings.storeName);
-        console.log("Store location:", settings.settings.storeLocation);
-        console.log("Store contact:", settings.settings.storeContact);
-
-        // Generate ESC/POS commands
         const escposData = generateReceiptESCPOS(
           transaction,
           settings.settings
@@ -212,7 +201,6 @@ export function TransactionListModal({
           color: "green",
         });
       } catch (error: any) {
-        console.error("Failed to print receipt:", error);
         notifications.show({
           title: "Print Failed",
           message: error.message || "Failed to print receipt",

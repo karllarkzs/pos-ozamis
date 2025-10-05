@@ -3,6 +3,7 @@ export * from "./useTransactions";
 export * from "./useProducts";
 export * from "./useReagents";
 export * from "./useReports";
+export * from "./useRoles";
 export * from "./useUsers";
 export {
   useEmployeeSales,
@@ -58,6 +59,7 @@ export type {
   User,
   UserRole,
   UserProfile,
+  Role,
   CreateUserRequest,
   UpdateUserRequest,
   SalesSummary,

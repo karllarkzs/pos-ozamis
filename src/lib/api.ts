@@ -11,7 +11,7 @@ import type {
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5288/api",
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -32,9 +32,14 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
+    window.dispatchEvent(new CustomEvent("server:reconnected"));
     return response;
   },
   (error) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem("auth-token");
       localStorage.removeItem("persist:pharmacy-pos-root");
@@ -44,6 +49,7 @@ api.interceptors.response.use(
 
     if (!error.response) {
       console.error("Network error:", error.message);
+      window.dispatchEvent(new CustomEvent("server:disconnected"));
     }
 
     return Promise.reject(error);
@@ -62,6 +68,7 @@ export interface CatalogItem {
   quantity: number;
   isLow: boolean;
   isDiscountable: boolean;
+  isPhilHealth: boolean;
 }
 
 export interface Product {
@@ -80,6 +87,7 @@ export interface Product {
   location?: string | null;
   expirationDate?: string | null;
   isDiscountable: boolean;
+  isPhilHealth: boolean;
   isLowStock: boolean;
   isExpired: boolean;
   isExpiringSoon: boolean;
@@ -116,6 +124,7 @@ export interface ProductFilters {
   type?: string;
 
   isDiscountable?: boolean;
+  isPhilHealth?: boolean;
   isLowStock?: boolean;
   isNoStock?: boolean;
   isExpired?: boolean;
@@ -154,26 +163,20 @@ export interface Reagent {
   name: string;
   reagentType: ReagentType;
   reagentTypeName: string;
-
   quantity: number;
   minimumStock: number;
   unitCost: number;
   expirationDate?: string | null;
   batchNumber?: string | null;
-
   currentCharges?: number;
   initialCharges?: number;
   totalCharges?: number;
-
   chargesPerUnit?: number;
-
   currentVolume?: number;
   initialVolume?: number;
   totalVolume?: number;
-
   volume?: number;
   unitOfMeasure?: string;
-
   isLowStock: boolean;
   isExpired: boolean;
   isExpiringSoon?: boolean;
@@ -181,7 +184,6 @@ export interface Reagent {
   totalAvailableAmount?: number;
   displayUnit: string;
   usagePercentage?: number;
-
   createdAt: string;
   updatedAt?: string | null;
   createdBy?: string | null;
@@ -201,17 +203,13 @@ export interface ReagentResponse {
 export interface ReagentFilters {
   page?: number;
   pageSize?: number;
-
   searchTerm?: string;
   reagentType?: ReagentType;
   batchNumber?: string;
-
   isLowStock?: boolean;
   isExpired?: boolean;
-
   minUnitCost?: number;
   maxUnitCost?: number;
-
   expiringSoonDays?: number;
 
   sortBy?:
@@ -488,7 +486,14 @@ export interface CreateExpenseRequest {
   }[];
 }
 
-export type UserRole = "SuperAdmin" | "Admin" | "Cashier" | "Lab";
+export type UserRole = "SuperAdmin" | "Admin" | "Cashier" | "Lab" | "MedTech";
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+}
 
 export interface UserProfile {
   id: string;
@@ -514,7 +519,7 @@ export interface CreateUserRequest {
   userName: string;
   email: string;
   password: string;
-  role: UserRole;
+  role: number;
   firstName: string;
   lastName: string;
 }
@@ -522,7 +527,7 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   userName?: string;
   email?: string;
-  role?: UserRole;
+  role?: number;
   isActive?: boolean;
   firstName?: string;
   lastName?: string;
@@ -550,6 +555,7 @@ export interface CatalogFilters {
   isLowStock?: boolean;
   isNoStock?: boolean;
   isDiscountable?: boolean;
+  isPhilHealth?: boolean;
   sortBy?:
     | "name"
     | "formulation"
@@ -1009,15 +1015,20 @@ export const apiEndpoints = {
     },
   },
   catalog: {
-    getAll: (filters?: CatalogFilters) => {
+    getAll: (filters?: CatalogFilters, config?: { signal?: AbortSignal }) => {
       const queryString = filters ? buildQueryString(filters) : "";
       return api.get<CatalogResponse>(
-        `/catalog${queryString ? `?${queryString}` : ""}`
+        `/catalog${queryString ? `?${queryString}` : ""}`,
+        config
       );
     },
-    getById: (id: string) => api.get<CatalogItem>(`/catalog/${id}`),
-    checkExists: (id: string) =>
-      api.get<{ itemId: string; exists: boolean }>(`/catalog/${id}/exists`),
+    getById: (id: string, config?: { signal?: AbortSignal }) =>
+      api.get<CatalogItem>(`/catalog/${id}`, config),
+    checkExists: (id: string, config?: { signal?: AbortSignal }) =>
+      api.get<{ itemId: string; exists: boolean }>(
+        `/catalog/${id}/exists`,
+        config
+      ),
   },
 
   auth: {
@@ -1126,6 +1137,47 @@ export const apiEndpoints = {
       ),
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/products/${id}`),
+
+    adjustStock: (
+      id: string,
+      data: {
+        quantityChange: number;
+        adjustmentType: string;
+        reason: string;
+      }
+    ) =>
+      api.post<{
+        id: string;
+        productId: string;
+        productName: string;
+        productBarcode: string;
+        quantityChange: number;
+        quantityBefore: number;
+        quantityAfter: number;
+        adjustmentType: string;
+        reason: string;
+        adjustedBy: string;
+        adjustedById: string;
+        createdAt: string;
+      }>(`/products/${id}/adjust-stock`, data),
+
+    getStockHistory: (id: string) =>
+      api.get<
+        Array<{
+          id: string;
+          productId: string;
+          productName: string;
+          productBarcode: string;
+          quantityChange: number;
+          quantityBefore: number;
+          quantityAfter: number;
+          adjustmentType: string;
+          reason: string;
+          adjustedBy: string;
+          adjustedById: string;
+          createdAt: string;
+        }>
+      >(`/products/${id}/stock-history`),
 
     getByBarcode: (barcode: string) =>
       api.get<{ success: boolean; message: string; data: Product }>(
@@ -1991,6 +2043,10 @@ export const apiEndpoints = {
         `/transactions/statistics${queryString ? `?${queryString}` : ""}`
       );
     },
+  },
+
+  roles: {
+    getAll: () => api.get<Role[]>("/roles"),
   },
 
   users: {

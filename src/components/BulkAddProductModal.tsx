@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm } from "@mantine/form";
 import {
   Modal,
@@ -69,6 +69,9 @@ export function BulkAddProductModal({
   const [products, setProducts] = useState<ProductRow[]>([createEmptyRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateStatuses, setDuplicateStatuses] = useState<boolean[]>([
+    false,
+  ]);
+  const [internalDuplicates, setInternalDuplicates] = useState<boolean[]>([
     false,
   ]);
 
@@ -146,13 +149,101 @@ export function BulkAddProductModal({
     },
   });
 
+  useEffect(() => {
+    const checkInternalDuplicates = () => {
+      const newInternalDuplicates = products.map((product, currentIndex) => {
+        const hasRequiredFields =
+          product.brand?.trim() &&
+          typeof product.retailPrice === "number" &&
+          typeof product.wholesalePrice === "number" &&
+          typeof product.quantity === "number" &&
+          typeof product.minimumStock === "number";
+
+        if (!hasRequiredFields) return false;
+
+        return products.some((otherProduct, otherIndex) => {
+          if (currentIndex === otherIndex) return false;
+
+          if (product.barcode?.trim() && otherProduct.barcode?.trim()) {
+            if (
+              product.barcode.trim().toLowerCase() ===
+              otherProduct.barcode.trim().toLowerCase()
+            ) {
+              return true;
+            }
+          }
+
+          if (
+            product.brand?.trim() &&
+            product.generic?.trim() &&
+            product.type?.trim() &&
+            otherProduct.brand?.trim() &&
+            otherProduct.generic?.trim() &&
+            otherProduct.type?.trim()
+          ) {
+            if (
+              product.brand.trim().toLowerCase() ===
+                otherProduct.brand.trim().toLowerCase() &&
+              product.generic.trim().toLowerCase() ===
+                otherProduct.generic.trim().toLowerCase() &&
+              product.type.trim().toLowerCase() ===
+                otherProduct.type.trim().toLowerCase()
+            ) {
+              return true;
+            }
+          }
+
+          const productFields = [
+            product.brand,
+            product.generic,
+            product.formulation,
+            product.category,
+            product.location,
+          ].filter((f) => f?.trim());
+
+          const otherFields = [
+            otherProduct.brand,
+            otherProduct.generic,
+            otherProduct.formulation,
+            otherProduct.category,
+            otherProduct.location,
+          ].filter((f) => f?.trim());
+
+          if (productFields.length >= 3 && otherFields.length >= 3) {
+            const fieldsMatch =
+              product.brand?.trim().toLowerCase() ===
+                otherProduct.brand?.trim().toLowerCase() &&
+              product.generic?.trim().toLowerCase() ===
+                otherProduct.generic?.trim().toLowerCase() &&
+              product.formulation?.trim().toLowerCase() ===
+                otherProduct.formulation?.trim().toLowerCase() &&
+              product.category?.trim().toLowerCase() ===
+                otherProduct.category?.trim().toLowerCase() &&
+              product.location?.trim().toLowerCase() ===
+                otherProduct.location?.trim().toLowerCase();
+
+            if (fieldsMatch) return true;
+          }
+
+          return false;
+        });
+      });
+
+      setInternalDuplicates(newInternalDuplicates);
+    };
+
+    checkInternalDuplicates();
+  }, [products]);
+
   const addRow = useCallback(() => {
     const newProducts = [...products, createEmptyRow()];
     const newDuplicateStatuses = [...duplicateStatuses, false];
+    const newInternalDuplicates = [...internalDuplicates, false];
     setProducts(newProducts);
     setDuplicateStatuses(newDuplicateStatuses);
+    setInternalDuplicates(newInternalDuplicates);
     form.setFieldValue("products", newProducts);
-  }, [products, duplicateStatuses, form]);
+  }, [products, duplicateStatuses, internalDuplicates, form]);
 
   const removeRow = useCallback(
     (index: number) => {
@@ -161,11 +252,15 @@ export function BulkAddProductModal({
       const newDuplicateStatuses = duplicateStatuses.filter(
         (_, i) => i !== index
       );
+      const newInternalDuplicates = internalDuplicates.filter(
+        (_, i) => i !== index
+      );
       setProducts(newProducts);
       setDuplicateStatuses(newDuplicateStatuses);
+      setInternalDuplicates(newInternalDuplicates);
       form.setFieldValue("products", newProducts);
     },
-    [products, duplicateStatuses, form]
+    [products, duplicateStatuses, internalDuplicates, form]
   );
 
   const handleDuplicateStatus = useCallback(
@@ -193,10 +288,18 @@ export function BulkAddProductModal({
     const validation = form.validate();
     if (validation.hasErrors) return;
 
-    
-    const hasDuplicates = duplicateStatuses.some((status) => status);
-    if (hasDuplicates) {
-      return; 
+    const hasDatabaseDuplicates = duplicateStatuses.some((status) => status);
+    const hasInternalDuplicates = internalDuplicates.some((status) => status);
+
+    if (hasDatabaseDuplicates || hasInternalDuplicates) {
+      notifications.show({
+        title: "Duplicates Detected",
+        message: hasInternalDuplicates
+          ? "You have duplicate products within this form. Please remove or modify them."
+          : "Some products already exist in the database.",
+        color: "orange",
+      });
+      return;
     }
 
     setIsSubmitting(true);
@@ -219,8 +322,8 @@ export function BulkAddProductModal({
 
       const response = await apiEndpoints.products.createBatch({
         products: productData,
-        validateDuplicates: false, 
-        continueOnError: false, 
+        validateDuplicates: false,
+        continueOnError: false,
       });
 
       notifications.show({
@@ -247,6 +350,7 @@ export function BulkAddProductModal({
   const handleClose = () => {
     setProducts([createEmptyRow()]);
     setDuplicateStatuses([false]);
+    setInternalDuplicates([false]);
     form.reset();
     onClose();
   };
@@ -312,6 +416,7 @@ export function BulkAddProductModal({
                 referenceData={referenceData}
                 errors={form.errors}
                 onDuplicateStatus={handleDuplicateStatus}
+                externalDuplicateStatus={internalDuplicates[index]}
               />
             ))}
           </SimpleGrid>
@@ -322,7 +427,8 @@ export function BulkAddProductModal({
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             {products.length} product{products.length > 1 ? "s" : ""} to add
-            {duplicateStatuses.some((status) => status) && (
+            {(duplicateStatuses.some((status) => status) ||
+              internalDuplicates.some((status) => status)) && (
               <Text component="span" c="orange" size="sm" ml="xs">
                 • Contains duplicates
               </Text>
@@ -338,10 +444,12 @@ export function BulkAddProductModal({
               loading={isSubmitting}
               disabled={
                 products.length === 0 ||
-                duplicateStatuses.some((status) => status)
+                duplicateStatuses.some((status) => status) ||
+                internalDuplicates.some((status) => status)
               }
             >
-              {duplicateStatuses.some((status) => status)
+              {duplicateStatuses.some((status) => status) ||
+              internalDuplicates.some((status) => status)
                 ? "Resolve Duplicates First"
                 : "Add All Products"}
             </Button>

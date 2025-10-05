@@ -33,6 +33,7 @@ import {
   useUpdateUser,
   useDeleteUser,
 } from "../hooks/api/useUsers";
+import { useRoles } from "../hooks/api";
 import { modals } from "@mantine/modals";
 
 interface UserModalProps {
@@ -47,7 +48,7 @@ interface UserFormValues {
   userName: string;
   email: string;
   password: string;
-  role: UserRole;
+  role: number;
   firstName: string;
   lastName: string;
   isActive: boolean;
@@ -57,18 +58,11 @@ const createEmptyFormValues = (): UserFormValues => ({
   userName: "",
   email: "",
   password: "",
-  role: "Cashier",
+  role: 2,
   firstName: "",
   lastName: "",
   isActive: true,
 });
-
-const roleOptions = [
-  { value: "SuperAdmin", label: "Super Admin - Full System Access" },
-  { value: "Admin", label: "Admin - Manage Users & Inventory" },
-  { value: "Cashier", label: "Cashier - Process Transactions" },
-  { value: "Lab", label: "Lab - Manage Tests & Reagents" },
-];
 
 export function UserModal({
   opened,
@@ -82,6 +76,7 @@ export function UserModal({
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const { data: roles, isLoading: rolesLoading } = useRoles();
 
   const form = useForm<UserFormValues>({
     initialValues: createEmptyFormValues(),
@@ -120,18 +115,21 @@ export function UserModal({
   });
 
   useEffect(() => {
-    if (mode === "edit" && user) {
+    if (mode === "edit" && user && roles) {
+      const userRoleObj = roles.find((r) => r.name === user.role);
+      const roleId = userRoleObj ? userRoleObj.id : 2;
+
       form.setValues({
         userName: user.userName || "",
         email: user.email || "",
         password: "",
-        role: user.role,
+        role: roleId,
         firstName: user.profile?.firstName || "",
         lastName: user.profile?.lastName || "",
         isActive: user.isActive,
       });
     }
-  }, [user, mode]);
+  }, [user, mode, roles]);
 
   const handleSubmit = async (values: UserFormValues) => {
     try {
@@ -228,8 +226,11 @@ export function UserModal({
     }
   };
 
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
+  const getRoleBadgeColor = (roleId: number) => {
+    const role = roles?.find((r) => r.id === roleId);
+    if (!role) return "gray";
+
+    switch (role.name) {
       case "SuperAdmin":
         return "red";
       case "Admin":
@@ -238,9 +239,16 @@ export function UserModal({
         return "green";
       case "Lab":
         return "violet";
+      case "MedTech":
+        return "teal";
       default:
         return "gray";
     }
+  };
+
+  const getRoleName = (roleId: number) => {
+    const role = roles?.find((r) => r.id === roleId);
+    return role ? role.name : "Unknown";
   };
 
   return (
@@ -273,7 +281,7 @@ export function UserModal({
                   variant="light"
                   size="sm"
                 >
-                  {form.values.role}
+                  {getRoleName(form.values.role)}
                 </Badge>
               </Group>
               <Divider />
@@ -304,8 +312,17 @@ export function UserModal({
                   label="Role"
                   placeholder="Select role"
                   required
-                  data={roleOptions}
-                  {...form.getInputProps("role")}
+                  disabled={rolesLoading}
+                  data={
+                    roles?.map((role) => ({
+                      value: role.id.toString(),
+                      label: `${role.name} - ${role.description}`,
+                    })) || []
+                  }
+                  value={form.values.role.toString()}
+                  onChange={(value) =>
+                    form.setFieldValue("role", value ? parseInt(value) : 2)
+                  }
                 />
               </Group>
             </Stack>
@@ -427,4 +444,3 @@ export function UserModal({
     </Modal>
   );
 }
-

@@ -66,52 +66,38 @@ class EscPosBuilder {
   }
 }
 
+function padRight(str: string, length: number): string {
+  return str.length > length
+    ? str.substring(0, length)
+    : str.padEnd(length, " ");
+}
+
+function padLeft(str: string, length: number): string {
+  return str.length > length
+    ? str.substring(0, length)
+    : str.padStart(length, " ");
+}
+
 export function generateReceiptESCPOS(
   transaction: Transaction,
   settings?: SystemSettings
 ): Uint8Array {
-  console.log("=== generateReceiptESCPOS called ===");
-  console.log("Settings received:", settings);
-  console.log("Settings type:", typeof settings);
-  console.log("Settings keys:", settings ? Object.keys(settings) : "undefined");
-
   const builder = new EscPosBuilder();
 
   const storeName = settings?.storeName || "OCT PHARMACY";
   const storeLocation = settings?.storeLocation || "";
   const storeContact = settings?.storeContact || "";
 
-  console.log("Extracted values:");
-  console.log("  storeName:", storeName);
-  console.log("  storeLocation:", storeLocation);
-  console.log("  storeContact:", storeContact);
-  console.log("===================================");
+  builder.init().align(1);
 
-  builder.init().align(1); // Center
-
-  console.log("About to print store name:", storeName);
   builder.doubleHeight(true).line(storeName).doubleHeight(false);
 
-  console.log(
-    "About to print storeLocation:",
-    storeLocation,
-    "Has value:",
-    !!storeLocation
-  );
   if (storeLocation) {
     builder.line(storeLocation);
-    console.log("Added storeLocation line");
   }
 
-  console.log(
-    "About to print storeContact:",
-    storeContact,
-    "Has value:",
-    !!storeContact
-  );
   if (storeContact) {
     builder.line(storeContact);
-    console.log("Added storeContact line");
   }
 
   builder
@@ -122,16 +108,22 @@ export function generateReceiptESCPOS(
     .line(`Date: ${new Date(transaction.transactionDate).toLocaleDateString()}`)
     .line(`Time: ${new Date(transaction.transactionDate).toLocaleTimeString()}`)
     .line(`Cashier: ${transaction.cashierName}`)
-    .line("--------------------------------")
-    .feed(1);
+    .line("--------------------------------");
 
   if (transaction.items && transaction.items.length > 0) {
+    builder
+      .feed(1)
+      .bold(true)
+      .line("Name          Qty Price  Total")
+      .bold(false)
+      .line("--------------------------------");
+
     transaction.items.forEach((item) => {
-      builder.line(item.itemName);
-      const qty = `  ${item.quantity}x`;
-      const price = `P${item.unitPrice.toFixed(2)}`;
-      const total = `P${item.lineTotal.toFixed(2)}`;
-      builder.line(`${qty}  ${price}  ${total}`);
+      const name = padRight(item.itemName, 12);
+      const qty = padLeft(`${item.quantity}`, 3);
+      const price = padLeft(item.unitPrice.toFixed(2), 6);
+      const total = padLeft(item.lineTotal.toFixed(2), 6);
+      builder.line(`${name} ${qty} ${price} ${total}`);
     });
   }
 
@@ -148,7 +140,6 @@ export function generateReceiptESCPOS(
     builder.line(`Sp. Discount:  -P${transaction.specialDiscount.toFixed(2)}`);
   }
 
-  // Show VAT if enabled in settings and has VAT amount
   if (settings?.showVat && transaction.vatAmount > 0) {
     const vatPercentage = settings?.vatAmount || 12;
     builder.line(
@@ -175,13 +166,7 @@ export function generateReceiptESCPOS(
     builder.line(`Ref: ${transaction.referenceNumber}`);
   }
 
-  builder
-    .feed(2)
-    .align(1) // Center
-    .line("Thank you for your purchase!")
-    .line("Please come again")
-    .feed(3)
-    .cut();
+  builder.feed(3).cut();
 
   return builder.build();
 }

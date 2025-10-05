@@ -22,7 +22,6 @@ import {
   IconMenu2,
   IconBuildingStore,
   IconLogout,
-  IconCash,
 } from "@tabler/icons-react";
 import { useAuth } from "../store/hooks";
 import { logout, getRoleName } from "../store/slices/authSlice";
@@ -136,7 +135,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       style={{
         width: "100vw",
         height: "100vh",
-        
+
         maxHeight: "100%",
         overflow: "auto",
       }}
@@ -149,26 +148,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               wrap="nowrap"
             >
               {!isCollapsed && (
-                <Stack gap="xs">
-                  <Group gap="xs">
-                    <IconBuildingStore
-                      size={24}
-                      color="var(--mantine-color-blue-6)"
-                    />
-                    <Text fw={600} size="lg">
-                      OCT Pharmacy
-                    </Text>
-                  </Group>
-                  <Button
-                    variant="light"
-                    size="xs"
-                    leftSection={<IconCash size={14} />}
-                    onClick={() => navigate("/")}
-                    fullWidth
-                  >
-                    Go to POS
-                  </Button>
-                </Stack>
+                <Group gap="xs">
+                  <IconBuildingStore
+                    size={24}
+                    color="var(--mantine-color-blue-6)"
+                  />
+                  <Text fw={600} size="lg">
+                    OCT Pharmacy
+                  </Text>
+                </Group>
               )}
               <ActionIcon
                 variant="subtle"

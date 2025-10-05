@@ -23,6 +23,7 @@ import {
   UnstyledButton,
   Title,
   Loader,
+  CloseButton,
 } from "@mantine/core";
 import {
   IconSearch,
@@ -35,8 +36,8 @@ import {
   IconChevronDown,
   IconTrashX,
   IconSettings,
-  IconChartBar,
   IconReceipt,
+  IconX,
 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "../components/DataTable";
 import { POSLayout } from "../components/POSLayout";
@@ -49,7 +50,7 @@ import {
 import type { CatalogItem } from "../hooks/api";
 import { apiEndpoints } from "../lib/api";
 import { useAuth, useCart, useSettings } from "../store/hooks";
-import { logout, getRoleName } from "../store/slices/authSlice";
+import { logout, getRoleName, canAccessPOS } from "../store/slices/authSlice";
 import { PaymentModal } from "../components/PaymentModal";
 import { TransactionListModal } from "../components/TransactionListModal";
 import { PrinterSettingsModal } from "../components/PrinterSettingsModal";
@@ -63,12 +64,23 @@ export function POSPage() {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (user && !canAccessPOS(user.role)) {
+      window.location.href = "/forbidden";
+    }
+  }, [user]);
+
+  if (!user || !canAccessPOS(user.role)) {
+    return null;
+  }
   const [productType, setProductType] = useState<string | null>(null);
   const [formulation, setFormulation] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [itemTypeFilter, setItemTypeFilter] = useState<string>("All");
   const [stockFilter, setStockFilter] = useState<string>("All");
+  const [isPhilHealthOnly, setIsPhilHealthOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<
     | "name"
     | "formulation"
@@ -106,8 +118,6 @@ export function POSPage() {
     useState(false);
   const [printerSettingsModalOpened, setPrinterSettingsModalOpened] =
     useState(false);
-  const [isServerConnected, setIsServerConnected] = useState(true);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -148,7 +158,6 @@ export function POSPage() {
     if (isTauri) {
       const defaultPrinter = localStorage.getItem("defaultPrinter");
       if (!defaultPrinter) {
-        console.log("No default printer found, opening printer settings...");
         setPrinterSettingsModalOpened(true);
       }
     }
@@ -160,9 +169,7 @@ export function POSPage() {
       try {
         const response = await apiEndpoints.discounts.getActive();
         setDiscounts(response.data);
-      } catch (error) {
-        console.error("Failed to fetch discounts:", error);
-      }
+      } catch (error) {}
     };
     fetchDiscounts();
   }, []);
@@ -202,6 +209,7 @@ export function POSPage() {
       location: location || undefined,
       isLowStock: stockFilter === "Low Stock" ? true : undefined,
       isNoStock: stockFilter === "No Stock" ? true : undefined,
+      isPhilHealth: isPhilHealthOnly ? true : undefined,
       sortBy: sortBy,
       sortDirection: sortDirection,
       pageSize: 20,
@@ -214,6 +222,7 @@ export function POSPage() {
       location,
       itemTypeFilter,
       stockFilter,
+      isPhilHealthOnly,
       sortBy,
       sortDirection,
     ]
@@ -231,77 +240,6 @@ export function POSPage() {
 
   const { processTransaction, isPending: isProcessing } =
     useProcessTransaction();
-
-  const showCatalogError = !!error;
-
-  // Show notification for catalog errors
-  useEffect(() => {
-    if (showCatalogError && error) {
-      notifications.show({
-        id: "catalog-error",
-        title: "Error loading catalog",
-        message:
-          error?.message || "Failed to load catalog items. Please try again.",
-        color: "red",
-        autoClose: 5000,
-      });
-      setIsServerConnected(false);
-    }
-  }, [showCatalogError, error]);
-
-  // Health check and auto-retry connection (only when disconnected)
-  useEffect(() => {
-    // Only run health checks when server is disconnected
-    if (isServerConnected) {
-      return;
-    }
-
-    let mounted = true;
-    let healthCheckInterval: NodeJS.Timeout;
-
-    const checkHealth = async () => {
-      if (!mounted) return;
-
-      try {
-        setIsCheckingConnection(true);
-        await apiEndpoints.health.check();
-
-        if (mounted) {
-          // Server is back online - refetch data
-          setIsServerConnected(true);
-          notifications.show({
-            id: "server-reconnected",
-            title: "Connected to server",
-            message: "Connection restored. Refreshing data...",
-            color: "green",
-            autoClose: 3000,
-          });
-
-          // Refetch catalog data
-          await refetch();
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsServerConnected(false);
-        }
-      } finally {
-        if (mounted) {
-          setIsCheckingConnection(false);
-        }
-      }
-    };
-
-    // Initial check
-    checkHealth();
-
-    // Poll every 10 seconds (only when disconnected)
-    healthCheckInterval = setInterval(checkHealth, 10000);
-
-    return () => {
-      mounted = false;
-      clearInterval(healthCheckInterval);
-    };
-  }, [isServerConnected, refetch]);
 
   const filteredProducts =
     infiniteData?.pages?.flatMap((page) => page.data) || [];
@@ -430,7 +368,6 @@ export function POSPage() {
 
         await refetch();
       } catch (error: any) {
-        console.error("Transaction failed:", error);
         throw error;
       }
     },
@@ -641,22 +578,6 @@ export function POSPage() {
             <Badge color="blue" variant="light">
               {isTauri ? "Tauri" : "Browser"}
             </Badge>
-            <Button
-              variant="light"
-              size="xs"
-              leftSection={<IconChartBar size={14} />}
-              onClick={() => navigate("/admin/dashboard")}
-            >
-              Dashboard
-            </Button>
-            <Button
-              variant="light"
-              size="xs"
-              leftSection={<IconSettings size={14} />}
-              onClick={() => navigate("/admin")}
-            >
-              Admin
-            </Button>
           </Group>
           <Group gap="md" align="center">
             <Group gap="xs">
@@ -704,7 +625,10 @@ export function POSPage() {
                 <Menu.Divider />
                 <Menu.Item
                   leftSection={<IconLogout size={14} />}
-                  onClick={() => dispatch(logout())}
+                  onClick={() => {
+                    dispatch(logout());
+                    navigate("/");
+                  }}
                   color="red"
                 >
                   Logout
@@ -778,6 +702,15 @@ export function POSPage() {
               value={searchQuery}
               onChange={handleSearchChange}
               leftSection={<IconSearch size={16} />}
+              rightSection={
+                searchQuery ? (
+                  <CloseButton
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                  />
+                ) : null
+              }
             />
           </div>
           <div style={{ flex: "1", minWidth: "130px" }}>
@@ -814,11 +747,25 @@ export function POSPage() {
                       productTypeCombobox.closeDropdown();
                     }, 150);
                   }}
-                  rightSection={<Combobox.Chevron />}
+                  rightSection={
+                    productType ? (
+                      <CloseButton
+                        size="sm"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleProductTypeChange(null);
+                          setProductTypeSearch("");
+                        }}
+                        aria-label="Clear product type"
+                      />
+                    ) : (
+                      <Combobox.Chevron />
+                    )
+                  }
                 />
               </Combobox.Target>
               <Combobox.Dropdown>
-                <Combobox.Options>
+                <Combobox.Options style={{ maxHeight: 200, overflowY: "auto" }}>
                   {referenceData.productTypes.data
                     .filter((item) =>
                       item
@@ -870,11 +817,25 @@ export function POSPage() {
                       formulationCombobox.closeDropdown();
                     }, 150);
                   }}
-                  rightSection={<Combobox.Chevron />}
+                  rightSection={
+                    formulation ? (
+                      <CloseButton
+                        size="sm"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleFormulationChange(null);
+                          setFormulationSearch("");
+                        }}
+                        aria-label="Clear formulation"
+                      />
+                    ) : (
+                      <Combobox.Chevron />
+                    )
+                  }
                 />
               </Combobox.Target>
               <Combobox.Dropdown>
-                <Combobox.Options>
+                <Combobox.Options style={{ maxHeight: 200, overflowY: "auto" }}>
                   {referenceData.formulations.data
                     .filter((item) =>
                       item
@@ -926,11 +887,25 @@ export function POSPage() {
                       categoryCombobox.closeDropdown();
                     }, 150);
                   }}
-                  rightSection={<Combobox.Chevron />}
+                  rightSection={
+                    category ? (
+                      <CloseButton
+                        size="sm"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleCategoryChange(null);
+                          setCategorySearch("");
+                        }}
+                        aria-label="Clear category"
+                      />
+                    ) : (
+                      <Combobox.Chevron />
+                    )
+                  }
                 />
               </Combobox.Target>
               <Combobox.Dropdown>
-                <Combobox.Options>
+                <Combobox.Options style={{ maxHeight: 200, overflowY: "auto" }}>
                   {referenceData.categories.data
                     .filter((item) =>
                       item
@@ -982,11 +957,25 @@ export function POSPage() {
                       locationCombobox.closeDropdown();
                     }, 150);
                   }}
-                  rightSection={<Combobox.Chevron />}
+                  rightSection={
+                    location ? (
+                      <CloseButton
+                        size="sm"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleLocationChange(null);
+                          setLocationSearch("");
+                        }}
+                        aria-label="Clear location"
+                      />
+                    ) : (
+                      <Combobox.Chevron />
+                    )
+                  }
                 />
               </Combobox.Target>
               <Combobox.Dropdown>
-                <Combobox.Options>
+                <Combobox.Options style={{ maxHeight: 200, overflowY: "auto" }}>
                   {referenceData.locations.data
                     .filter((item) =>
                       item
@@ -1061,9 +1050,19 @@ export function POSPage() {
         style={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
         <Group justify="space-between" mb="sm">
-          <Text size="lg" fw={600}>
-            Items
-          </Text>
+          <Group gap="md">
+            <Text size="lg" fw={600}>
+              Items
+            </Text>
+            <Checkbox
+              label="PhilHealth only"
+              checked={isPhilHealthOnly}
+              onChange={(event) =>
+                setIsPhilHealthOnly(event.currentTarget.checked)
+              }
+              size="sm"
+            />
+          </Group>
           <Text size="sm" c="dimmed">
             Showing {filteredProducts.length} of {totalCount} items
             {hasNextPage && <span> (scroll for more)</span>}
@@ -1103,6 +1102,7 @@ export function POSPage() {
       sortBy,
       sortDirection,
       handleSort,
+      isPhilHealthOnly,
     ]
   );
 
@@ -1302,30 +1302,6 @@ export function POSPage() {
 
   return (
     <>
-      {!isServerConnected && (
-        <Paper
-          p="xs"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            backgroundColor: "#fff3cd",
-            borderBottom: "2px solid #ffc107",
-            borderRadius: 0,
-          }}
-        >
-          <Group justify="center" gap="xs">
-            <Loader size="xs" color="orange" />
-            <Text size="sm" fw={500} c="orange.8">
-              {isCheckingConnection
-                ? "Connecting to server..."
-                : "Server disconnected. Retrying..."}
-            </Text>
-          </Group>
-        </Paper>
-      )}
       <POSLayout
         header={headerSection}
         filters={filtersSection}
@@ -1416,6 +1392,8 @@ export function POSPage() {
           specialDiscount: cart.discountAmounts.specialDiscountAmount,
           vat: cart.vat,
           total: cart.total,
+          discountName: cart.discount.discountName,
+          discountPercent: cart.discount.discountPercent,
         }}
       />
 

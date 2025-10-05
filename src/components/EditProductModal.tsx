@@ -8,6 +8,10 @@ import { apiEndpoints } from "../lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProductsReferenceData } from "../hooks/api/useProducts";
 
+type ProductWithDate = Omit<Product, "expirationDate"> & {
+  expirationDate: Date | null;
+};
+
 interface EditProductModalProps {
   opened: boolean;
   onClose: () => void;
@@ -21,9 +25,12 @@ export function EditProductModal({
   products: initialProducts,
   onSuccess,
 }: EditProductModalProps) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [initialProductsState, setInitialProductsState] =
-    useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<ProductWithDate[]>(
+    initialProducts as ProductWithDate[]
+  );
+  const [initialProductsState, setInitialProductsState] = useState<
+    ProductWithDate[]
+  >(initialProducts as ProductWithDate[]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,8 +48,12 @@ export function EditProductModal({
 
   useEffect(() => {
     if (opened) {
-      setProducts(initialProducts);
-      setInitialProductsState(JSON.parse(JSON.stringify(initialProducts)));
+      const productsWithDates = initialProducts.map((p) => ({
+        ...p,
+        expirationDate: p.expirationDate ? new Date(p.expirationDate) : null,
+      }));
+      setProducts(productsWithDates);
+      setInitialProductsState(JSON.parse(JSON.stringify(productsWithDates)));
       setErrors({});
     }
   }, [opened, initialProducts]);
@@ -74,9 +85,7 @@ export function EditProductModal({
     });
   };
 
-  const handleDuplicateStatus = (_index: number, _isDuplicate: boolean) => {
-    
-  };
+  const handleDuplicateStatus = (_index: number, _isDuplicate: boolean) => {};
 
   const hasChanges = () => {
     if (products.length !== initialProductsState.length) return true;
@@ -95,7 +104,6 @@ export function EditProductModal({
         product.batchNumber !== initial.batchNumber ||
         product.retailPrice !== initial.retailPrice ||
         product.wholesalePrice !== initial.wholesalePrice ||
-        product.quantity !== initial.quantity ||
         product.minimumStock !== initial.minimumStock ||
         product.location !== initial.location ||
         product.isDiscountable !== initial.isDiscountable ||
@@ -157,10 +165,14 @@ export function EditProductModal({
             batchNumber: product.batchNumber,
             retailPrice: product.retailPrice,
             wholesalePrice: product.wholesalePrice,
-            quantity: product.quantity,
             minimumStock: product.minimumStock,
             location: product.location,
-            expirationDate: product.expirationDate,
+            expirationDate: product.expirationDate
+              ? typeof product.expirationDate === "object" &&
+                product.expirationDate instanceof Date
+                ? product.expirationDate.toISOString()
+                : String(product.expirationDate)
+              : null,
             isDiscountable: product.isDiscountable,
           },
         });

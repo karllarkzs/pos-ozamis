@@ -144,6 +144,7 @@ interface ProductEntryCardProps {
   errors: any;
   onDuplicateStatus: (index: number, isDuplicate: boolean) => void;
   isEditMode?: boolean;
+  externalDuplicateStatus?: boolean;
 }
 
 export function ProductEntryCard({
@@ -156,19 +157,20 @@ export function ProductEntryCard({
   errors,
   onDuplicateStatus,
   isEditMode = false,
+  externalDuplicateStatus = false,
 }: ProductEntryCardProps) {
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  
+  const isAnyDuplicate = isDuplicate || externalDuplicateStatus;
+
   const lastCheckedRef = useRef<{
     barcode?: string;
     core?: string;
     comprehensive?: string;
   }>({});
 
-  
-  const [debouncedBarcode] = useDebouncedValue(product.barcode, 500); 
+  const [debouncedBarcode] = useDebouncedValue(product.barcode, 500);
 
   const [debouncedCoreFields] = useDebouncedValue(
     {
@@ -177,7 +179,7 @@ export function ProductEntryCard({
       type: product.type,
     },
     1000
-  ); 
+  );
   const [debouncedAllFields] = useDebouncedValue(
     {
       brand: product.brand,
@@ -189,13 +191,12 @@ export function ProductEntryCard({
       expirationDate: product.expirationDate,
     },
     1500
-  ); 
+  );
 
   const hasErrors = Object.keys(errors).some((key) =>
     key.startsWith(`products.${index}.`)
   );
 
-  
   const hasRequiredFields = useCallback(() => {
     return (
       product.brand?.trim() &&
@@ -283,7 +284,6 @@ export function ProductEntryCard({
     [hasRequiredFields, index, onDuplicateStatus, isEditMode]
   );
 
-  
   useEffect(() => {
     const barcodeValue = debouncedBarcode?.trim();
     if (barcodeValue && barcodeValue !== lastCheckedRef.current.barcode) {
@@ -292,7 +292,6 @@ export function ProductEntryCard({
     }
   }, [debouncedBarcode, checkForDuplicates]);
 
-  
   useEffect(() => {
     const { brand, generic } = debouncedCoreFields;
     const coreKey = `${brand?.trim() || ""}-${generic?.trim() || ""}`;
@@ -306,7 +305,6 @@ export function ProductEntryCard({
     }
   }, [debouncedCoreFields, checkForDuplicates]);
 
-  
   useEffect(() => {
     const { brand, generic, formulation, category, location } =
       debouncedAllFields;
@@ -335,13 +333,13 @@ export function ProductEntryCard({
       radius="md"
       withBorder
       style={{
-        borderColor: isDuplicate
+        borderColor: isAnyDuplicate
           ? "var(--mantine-color-orange-4)"
           : hasErrors
           ? "var(--mantine-color-red-5)"
           : undefined,
-        borderWidth: isDuplicate || hasErrors ? 2 : 1,
-        backgroundColor: isDuplicate
+        borderWidth: isAnyDuplicate || hasErrors ? 2 : 1,
+        backgroundColor: isAnyDuplicate
           ? "var(--mantine-color-orange-0)"
           : undefined,
       }}
@@ -352,8 +350,14 @@ export function ProductEntryCard({
             <Badge variant="light" color="blue" size="sm">
               Product #{index + 1}
             </Badge>
-            {isDuplicate && (
-              <Tooltip label="This product may already exist in the system">
+            {isAnyDuplicate && (
+              <Tooltip
+                label={
+                  externalDuplicateStatus
+                    ? "This product is a duplicate of another product in this form"
+                    : "This product may already exist in the system"
+                }
+              >
                 <Badge variant="filled" color="orange" size="sm">
                   <Group gap={4}>
                     <IconAlertTriangle size={12} />
@@ -489,15 +493,22 @@ export function ProductEntryCard({
             />
           </Grid.Col>
           <Grid.Col span={6}>
-            <NumberInput
-              label="Quantity"
-              placeholder="0"
-              value={product.quantity}
-              onChange={(value) => onUpdate(index, "quantity", value)}
-              error={errors[`products.${index}.quantity`]}
-              min={0}
-              required
-            />
+            <Tooltip
+              label="Use Adjust Stock to modify quantity"
+              disabled={!isEditMode}
+              withArrow
+            >
+              <NumberInput
+                label="Quantity"
+                placeholder="0"
+                value={product.quantity}
+                onChange={(value) => onUpdate(index, "quantity", value)}
+                error={errors[`products.${index}.quantity`]}
+                min={0}
+                required
+                disabled={isEditMode}
+              />
+            </Tooltip>
           </Grid.Col>
           <Grid.Col span={6}>
             <NumberInput

@@ -26,8 +26,8 @@ export const catalogKeys = {
 export function useCatalog(filters?: CatalogFilters) {
   return useQuery({
     queryKey: catalogKeys.list(filters || {}),
-    queryFn: async (): Promise<CatalogResponse> => {
-      const response = await apiEndpoints.catalog.getAll(filters);
+    queryFn: async ({ signal }): Promise<CatalogResponse> => {
+      const response = await apiEndpoints.catalog.getAll(filters, { signal });
       return response.data;
     },
     staleTime: 2 * 60 * 1000,
@@ -46,13 +46,15 @@ export function useCatalog(filters?: CatalogFilters) {
 export function useInfiniteCatalog(filters?: Omit<CatalogFilters, "page">) {
   return useInfiniteQuery({
     queryKey: catalogKeys.infinite(filters || {}),
-    queryFn: async ({ pageParam = 1 }): Promise<CatalogResponse> => {
+    queryFn: async ({ pageParam = 1, signal }): Promise<CatalogResponse> => {
       const filtersWithPage: CatalogFilters = {
         ...filters,
         page: pageParam,
         pageSize: filters?.pageSize || 20,
       };
-      const response = await apiEndpoints.catalog.getAll(filtersWithPage);
+      const response = await apiEndpoints.catalog.getAll(filtersWithPage, {
+        signal,
+      });
       return response.data;
     },
     getNextPageParam: (lastPage) => {
@@ -66,8 +68,8 @@ export function useInfiniteCatalog(filters?: Omit<CatalogFilters, "page">) {
 export function useCatalogItem(id: string) {
   return useQuery({
     queryKey: catalogKeys.detail(id),
-    queryFn: async (): Promise<CatalogItem> => {
-      const response = await apiEndpoints.catalog.getById(id);
+    queryFn: async ({ signal }): Promise<CatalogItem> => {
+      const response = await apiEndpoints.catalog.getById(id, { signal });
       return response.data;
     },
     enabled: !!id,

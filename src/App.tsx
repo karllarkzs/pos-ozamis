@@ -1,11 +1,15 @@
 import { Container, Center, LoadingOverlay } from "@mantine/core";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { createTauriAPI } from "./utils/tauri-api";
 import { useEffect } from "react";
 import { LoginPage } from "./pages/LoginPage";
 import { POSPage } from "./pages/POSPage";
 import { AdminPage } from "./pages/AdminPage";
 import { UpdateNotification } from "./components/UpdateNotification";
+import { ServerDisconnectedOverlay } from "./components/ServerDisconnectedOverlay";
+import { ForbiddenPage } from "./components/ForbiddenPage";
+import { NotFoundPage } from "./components/NotFoundPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth, useSettings } from "./store/hooks";
 import {
   loginStart,
@@ -14,6 +18,7 @@ import {
   logout,
   setUser,
   updateActivity,
+  getDefaultRouteForRole,
 } from "./store/slices/authSlice";
 import {
   fetchSettingsStart,
@@ -22,8 +27,20 @@ import {
 } from "./store/slices/settingsSlice";
 import { apiEndpoints } from "./lib/api";
 
+function RoleBasedRedirect() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/pos" replace />;
+  }
+
+  const defaultRoute = getDefaultRouteForRole(user.role);
+  return <Navigate to={defaultRoute} replace />;
+}
+
 function App() {
-  const { isAuthenticated, isLoading, tokenExpiresAt, dispatch } = useAuth();
+  const { isAuthenticated, isLoading, tokenExpiresAt, user, dispatch } =
+    useAuth();
   const settings = useSettings();
 
   useEffect(() => {
@@ -44,26 +61,19 @@ function App() {
         const tauriAPI = await createTauriAPI();
         if (tauriAPI) {
           window.electronAPI = tauriAPI;
-          console.log("Tauri API initialized successfully");
         }
       }
     };
 
     initAPI();
 
-    // Listen for persist clear message from parent window
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "CLEAR_PERSIST") {
-        console.log("Clearing persisted data on app close");
-        // Clear localStorage keys used by redux-persist
         try {
           localStorage.removeItem("persist:pharmacy-pos-root");
           localStorage.removeItem("auth-token");
           localStorage.removeItem("defaultPrinter");
-          console.log("Persisted data cleared");
-        } catch (e) {
-          console.error("Failed to clear localStorage:", e);
-        }
+        } catch (e) {}
       }
     };
 
@@ -78,7 +88,6 @@ function App() {
         const expiry = new Date(tokenExpiresAt);
 
         if (now > expiry) {
-          console.log("Token expired, logging out");
           dispatch(logout());
           localStorage.removeItem("persist:pharmacy-pos-root");
           localStorage.removeItem("auth-token");
@@ -90,7 +99,6 @@ function App() {
     };
 
     const handleUnauthorized = () => {
-      console.log("401 Unauthorized received, logging out");
       dispatch(logout());
     };
 
@@ -105,7 +113,6 @@ function App() {
     };
   }, [isAuthenticated, tokenExpiresAt, dispatch]);
 
-  // Fetch system settings on startup and poll every 5 minutes
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -114,7 +121,6 @@ function App() {
         settings.dispatch(fetchSettingsStart());
         const response = await apiEndpoints.systemSettings.getAll();
 
-        // Transform array of settings into flat object structure
         const settingsObj = {
           storeName:
             response.data.find((s) => s.key === "store_name")?.value ||
@@ -133,9 +139,7 @@ function App() {
         };
 
         settings.dispatch(fetchSettingsSuccess(settingsObj));
-        console.log("System settings loaded:", settingsObj);
       } catch (error: any) {
-        console.error("Failed to fetch system settings:", error);
         settings.dispatch(
           fetchSettingsFailure(
             error.message || "Failed to load system settings"
@@ -163,9 +167,23 @@ function App() {
       if (loginResponse.data.success) {
         const { accessToken, expiresAt, user } = loginResponse.data.data;
 
+        const userRole = (user as any).roleId || user.role;
+        const normalizedUser = {
+          ...user,
+          role: userRole,
+        };
+
+        const allowedRoles = [1, 2, 4];
+        if (!allowedRoles.includes(userRole)) {
+          const errorMessage =
+            "Access denied. This account type is not authorized to log in to the POS system.";
+          dispatch(loginFailure(errorMessage));
+          return { success: false, error: errorMessage };
+        }
+
         dispatch(
           loginSuccess({
-            user,
+            user: normalizedUser,
             accessToken,
             expiresAt,
           })
@@ -174,11 +192,16 @@ function App() {
         try {
           const profileResponse = await apiEndpoints.auth.getCurrentUser();
           if (profileResponse.data.success) {
-            dispatch(setUser(profileResponse.data.data));
+            const profileUser = profileResponse.data.data;
+            const profileUserRole =
+              (profileUser as any).roleId || profileUser.role;
+            const normalizedProfileUser = {
+              ...profileUser,
+              role: profileUserRole,
+            };
+            dispatch(setUser(normalizedProfileUser));
           }
-        } catch (profileError) {
-          console.warn("Failed to fetch user profile:", profileError);
-        }
+        } catch (profileError) {}
 
         return { success: true, error: null };
       } else {
@@ -187,8 +210,6 @@ function App() {
         return { success: false, error: errorMessage };
       }
     } catch (error: any) {
-      console.error("Login error:", error);
-
       let errorMessage = "Login failed";
       if (error.response?.status === 401) {
         errorMessage =
@@ -213,16 +234,42 @@ function App() {
   return (
     <>
       <UpdateNotification />
+      <ServerDisconnectedOverlay />
       {!isAuthenticated ? (
-        <Container size="sm" py="xl">
-          <Center h="100%" w="100%">
-            <LoginPage onLogin={handleLogin} />
-          </Center>
-        </Container>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Container size="sm" py="xl">
+                <Center h="100%" w="100%">
+                  <LoginPage onLogin={handleLogin} />
+                </Center>
+              </Container>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       ) : (
         <Routes>
-          <Route path="/" element={<POSPage />} />
-          <Route path="/admin/*" element={<AdminPage />} />
+          <Route path="/" element={<RoleBasedRedirect />} />
+          <Route
+            path="/pos"
+            element={
+              <ProtectedRoute requiredAccess="pos">
+                <POSPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requiredAccess="admin">
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/forbidden" element={<ForbiddenPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       )}
     </>

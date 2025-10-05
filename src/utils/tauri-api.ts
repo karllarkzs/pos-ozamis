@@ -45,7 +45,6 @@ export async function createTauriAPI(): Promise<DesktopAPI | null> {
       },
     };
   } catch (error) {
-    console.error("Failed to create Tauri API:", error);
     return null;
   }
 }

@@ -18,7 +18,7 @@ export interface User {
   };
 }
 
-export type RoleName = "Cashier" | "Admin" | "Lab";
+export type RoleName = "Cashier" | "Admin" | "Lab" | "SuperAdmin" | "MedTech";
 
 export const getRoleName = (roleNumber: number): RoleName => {
   switch (roleNumber) {
@@ -28,6 +28,10 @@ export const getRoleName = (roleNumber: number): RoleName => {
       return "Admin";
     case 3:
       return "Lab";
+    case 4:
+      return "SuperAdmin";
+    case 5:
+      return "MedTech";
     default:
       return "Cashier";
   }
@@ -41,8 +45,29 @@ export const getRoleNumber = (roleName: RoleName): number => {
       return 2;
     case "Lab":
       return 3;
+    case "SuperAdmin":
+      return 4;
+    case "MedTech":
+      return 5;
     default:
       return 1;
+  }
+};
+
+export const getDefaultRouteForRole = (roleNumber: number): string => {
+  switch (roleNumber) {
+    case 1:
+      return "/pos";
+    case 2:
+      return "/admin";
+    case 3:
+      return "/lab";
+    case 4:
+      return "/admin";
+    case 5:
+      return "/lab";
+    default:
+      return "/pos";
   }
 };
 
@@ -176,25 +201,25 @@ export const selectTokenExpiresAt = (state: { auth: AuthState }) =>
   state.auth.tokenExpiresAt;
 
 export const hasRole = (userRole: number, requiredRole: number): boolean => {
-  if (userRole === 2) return true;
+  if (userRole === 2 || userRole === 4) return true;
 
   return userRole === requiredRole;
 };
 
 export const isAdmin = (userRole?: number): boolean => {
-  return userRole === 2;
+  return userRole === 2 || userRole === 4;
 };
 
 export const canAccessAdmin = (userRole?: number): boolean => {
-  return userRole === 2;
+  return userRole === 2 || userRole === 4;
 };
 
 export const canAccessPOS = (userRole?: number): boolean => {
-  return userRole === 1 || userRole === 2;
+  return userRole === 1;
 };
 
 export const canAccessLab = (userRole?: number): boolean => {
-  return userRole === 3 || userRole === 2;
+  return userRole === 3 || userRole === 5 || userRole === 2 || userRole === 4;
 };
 
 export const isTokenExpired = (tokenExpiresAt: string | null): boolean => {

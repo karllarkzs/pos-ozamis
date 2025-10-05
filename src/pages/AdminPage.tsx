@@ -5,8 +5,23 @@ import { InventoryPage } from "./admin/InventoryPage";
 import { ReportsPage } from "./admin/ReportsPage";
 import { UsersPage } from "./admin/UsersPage";
 import { SettingsPage } from "./admin/SettingsPage";
+import { useAuth } from "../store/hooks";
+import { canAccessAdmin } from "../store/slices/authSlice";
+import { useEffect } from "react";
 
 export function AdminPage() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && !canAccessAdmin(user.role)) {
+      window.location.href = "/forbidden";
+    }
+  }, [user]);
+
+  if (!user || !canAccessAdmin(user.role)) {
+    return null;
+  }
+
   return (
     <AdminLayout>
       <Routes>

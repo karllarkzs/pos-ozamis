@@ -41,6 +41,8 @@ interface PaymentModalProps {
     specialDiscount: number;
     vat: number;
     total: number;
+    discountName?: string | null;
+    discountPercent?: number;
   };
 }
 
@@ -53,14 +55,7 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const settings = useSettings();
 
-  const discountAmount =
-    transactionSummary.regularDiscount + transactionSummary.specialDiscount;
-  const taxableAmount = Math.max(
-    0,
-    transactionSummary.subtotal - discountAmount
-  );
-  const correctVAT = taxableAmount * 0.12;
-  const correctTotal = taxableAmount + correctVAT;
+  const correctTotal = transactionSummary.total;
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Cash");
   const [cashInHand, setCashInHand] = useState<number>(correctTotal);
@@ -163,7 +158,10 @@ export function PaymentModal({
             {transactionSummary.regularDiscount > 0 && (
               <Group justify="space-between">
                 <Text size="sm" c="dimmed">
-                  Regular Discount (10%)
+                  {transactionSummary.discountName || "Discount"}{" "}
+                  {transactionSummary.discountPercent
+                    ? `(${transactionSummary.discountPercent}%)`
+                    : ""}
                 </Text>
                 <Text size="sm" c="dimmed">
                   -{formatCurrency(transactionSummary.regularDiscount)}
@@ -182,10 +180,10 @@ export function PaymentModal({
               </Group>
             )}
 
-            {settings.showVat && correctVAT > 0 && (
+            {settings.showVat && transactionSummary.vat > 0 && (
               <Group justify="space-between">
                 <Text size="sm">VAT ({settings.vatAmount}%)</Text>
-                <Text size="sm">{formatCurrency(correctVAT)}</Text>
+                <Text size="sm">{formatCurrency(transactionSummary.vat)}</Text>
               </Group>
             )}
 

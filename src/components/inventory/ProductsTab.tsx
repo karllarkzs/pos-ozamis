@@ -18,6 +18,18 @@ import {
   IconAlertTriangle,
   IconClock,
   IconPrinter,
+  IconAdjustments,
+  IconDiscount,
+  IconHeartPlus,
+  IconPlus,
+  IconCross,
+  IconDropletPlus,
+  IconDiscount2,
+  IconDiscountCheckFilled,
+  IconFlagDiscount,
+  IconPercentage,
+  IconEyeDiscount,
+  IconCirclePercentage,
 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "../DataTable";
 import {
@@ -32,6 +44,7 @@ import { formatCurrency } from "../../utils/currency";
 import { ProductSummaryStats } from "../ProductSummaryStats";
 import { EditProductModal } from "../EditProductModal";
 import { PrintPreviewModal } from "../PrintPreviewModal";
+import { StockAdjustmentModal } from "../StockAdjustmentModal";
 
 interface ProductsTabProps {
   onAddProduct: () => void;
@@ -58,12 +71,12 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
 
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [printModalOpened, setPrintModalOpened] = useState(false);
+  const [adjustStockModalOpened, setAdjustStockModalOpened] = useState(false);
   const [productsToEdit, setProductsToEdit] = useState<Product[]>([]);
+  const [productToAdjust, setProductToAdjust] = useState<Product | null>(null);
 
-  
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  
   const productFilters: Omit<ProductFilters, "page"> = useMemo(
     () => ({
       searchTerm: debouncedSearchQuery || undefined,
@@ -94,7 +107,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     ]
   );
 
-  
   const {
     data: infiniteData,
     isLoading,
@@ -110,7 +122,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
   const products = infiniteData?.pages?.flatMap((page) => page.data) || [];
   const totalCount = infiniteData?.pages?.[0]?.totalCount || 0;
 
-  
   useEffect(() => {
     if (error) {
       notifications.show({
@@ -121,7 +132,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     }
   }, [error]);
 
-  
   const batchDeleteMutation = useMutation({
     mutationFn: (data: { productIds: string[]; reason?: string }) =>
       apiEndpoints.products.deleteBatch(data),
@@ -152,7 +162,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     },
   });
 
-  
   const handleSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setSearchQuery(event.currentTarget.value);
@@ -221,7 +230,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
   );
 
   const handleFilterPreset = useCallback((filterType: string) => {
-    
     setTypeFilter(null);
     setCategoryFilter(null);
     setLocationFilter(null);
@@ -231,7 +239,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     setIsExpired(null);
     setIsExpiringSoon(null);
 
-    
     switch (filterType) {
       case "low-stock":
         setIsLowStock(true);
@@ -261,7 +268,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     setEditModalOpened(true);
   }, [products, selectedProductIds]);
 
-  
   const getStockColor = (item: Product) => {
     if (item.quantity === 0) return "red";
     if (item.isLowStock) return "orange";
@@ -282,7 +288,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     return {};
   };
 
-  
   const productColumns: DataTableColumn<Product>[] = useMemo(
     () => [
       {
@@ -325,26 +330,38 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         sortable: true,
         sortKey: "brand",
         render: (item: Product) => (
-          <div>
-            <Text size="sm" fw={500}>
+          <Group gap="xs" wrap="nowrap" align="center">
+            <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
               {item.isDiscountable && (
-                <span
-                  style={{
-                    fontSize: "10px",
-                    verticalAlign: "super",
-                    marginRight: "2px",
-                    color: "#ffd43b",
-                  }}
-                >
-                  ⭐
-                </span>
+                <Tooltip label="Discountable" withArrow>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <IconCirclePercentage
+                      size={24}
+                      style={{ color: "var(--mantine-color-green-6)" }}
+                    />
+                  </div>
+                </Tooltip>
               )}
-              {item.brand}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {item.generic}
-            </Text>
-          </div>
+              {item.isPhilHealth && (
+                <Tooltip label="PhilHealth" withArrow>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <IconDropletPlus
+                      size={24}
+                      style={{ color: "var(--mantine-color-red-6)" }}
+                    />
+                  </div>
+                </Tooltip>
+              )}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Text size="sm" fw={500} truncate>
+                {item.brand}
+              </Text>
+              <Text size="xs" c="dimmed" truncate>
+                {item.generic}
+              </Text>
+            </div>
+          </Group>
         ),
       },
       {
@@ -680,6 +697,26 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                 Print
               </Button>
             </Tooltip>
+            {selectedProductIds.size === 1 && (
+              <Tooltip label="Adjust stock quantity">
+                <Button
+                  leftSection={<IconAdjustments size={16} />}
+                  variant="light"
+                  color="blue"
+                  size="sm"
+                  onClick={() => {
+                    const productId = Array.from(selectedProductIds)[0];
+                    const product = products.find((p) => p.id === productId);
+                    if (product) {
+                      setProductToAdjust(product);
+                      setAdjustStockModalOpened(true);
+                    }
+                  }}
+                >
+                  Adjust Stock
+                </Button>
+              </Tooltip>
+            )}
             {selectedProductIds.size > 0 && (
               <>
                 <Tooltip
@@ -766,6 +803,20 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         opened={printModalOpened}
         onClose={() => setPrintModalOpened(false)}
         type="products"
+      />
+
+      {}
+      <StockAdjustmentModal
+        opened={adjustStockModalOpened}
+        onClose={() => {
+          setAdjustStockModalOpened(false);
+          setProductToAdjust(null);
+        }}
+        product={productToAdjust}
+        onSuccess={() => {
+          refetch();
+          setSelectedProductIds(new Set());
+        }}
       />
     </div>
   );

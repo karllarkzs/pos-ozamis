@@ -8,6 +8,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { onlineManager } from "@tanstack/react-query";
 import App from "./App.tsx";
 import { theme } from "./theme.ts";
 import { store, persistor } from "./store/index.ts";
@@ -16,6 +17,10 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/spotlight/styles.css";
+
+onlineManager.setEventListener(() => {
+  return () => {};
+});
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -33,7 +38,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               >
                 <App />
               </BrowserRouter>
-              <ReactQueryDevtools initialIsOpen={false} />
+              {import.meta.env.DEV && (
+                <ReactQueryDevtools initialIsOpen={false} />
+              )}
             </ModalsProvider>
           </MantineProvider>
         </PersistGate>

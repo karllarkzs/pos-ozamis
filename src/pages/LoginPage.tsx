@@ -47,13 +47,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       const tauri = hasDirectTauri || (inIframe && hasAPI);
       const desktop = hasDirectTauri || hasAPI;
 
-      console.log("=== Tauri Detection Debug ===");
-      console.log("In iframe:", inIframe);
-      console.log("window.__TAURI__:", window.__TAURI__);
-      console.log("window.electronAPI:", window.electronAPI);
-      console.log("Setting isTauri:", tauri);
-      console.log("Setting isDesktop:", desktop);
-
       if (tauri !== isTauri) setIsTauri(tauri);
       if (desktop !== isDesktop) setIsDesktop(desktop);
     };
