@@ -11,6 +11,7 @@ import {
   Badge,
   Group,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconLogin,
   IconAlertCircle,
@@ -22,7 +23,11 @@ interface LoginPageProps {
   onLogin: (
     username: string,
     password: string
-  ) => Promise<{ success: boolean; error: string | null }>;
+  ) => Promise<{
+    success: boolean;
+    error: string | null;
+    errors?: Record<string, string[]>;
+  }>;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -67,14 +72,27 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     const result = await onLogin(username, password);
-
-    if (!result.success && result.error) {
-      setError(result.error);
-    }
-
     setLoading(false);
+    let errorMsg = result.error || "Login Failed";
+    // Check for validation error on password
+    if (result.errors && Array.isArray(result.errors.Password)) {
+      errorMsg = "Invalid username or password";
+    } else if (!result.success && errorMsg !== "Invalid username or password") {
+      errorMsg = "Invalid username or password";
+    }
+    if (
+      !result.success ||
+      (result.errors && Array.isArray(result.errors.Password))
+    ) {
+      setError(errorMsg);
+      notifications.show({
+        title: "Login Failed",
+        message: errorMsg,
+        color: "red",
+        autoClose: 4000,
+      });
+    }
   };
 
   return (
@@ -88,7 +106,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         justifyContent: "center",
       }}
     >
-      <Paper p="xl" shadow="md" radius="md" withBorder>
+      <Paper
+        p="xl"
+        shadow="md"
+        radius="md"
+        withBorder
+        style={{ minWidth: 340, maxWidth: 400, width: "100%" }}
+      >
         <form onSubmit={handleSubmit}>
           <Stack>
             <div style={{ textAlign: "center" }}>
@@ -108,39 +132,31 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   {isTauri ? "Tauri" : isDesktop ? "Desktop" : "Browser"}
                 </Badge>
               </Group>
-              <Text c="dimmed" size="sm">
+              <Text size="sm" c="dimmed" mt={-4}>
                 Enter your credentials to continue
               </Text>
             </div>
-
             {error && (
-              <Alert
-                color="red"
-                icon={<IconAlertCircle size={16} />}
-                title="Login Failed"
-              >
+              <Alert icon={<IconAlertCircle size={16} />} color="red" mb="xs">
                 {error}
               </Alert>
             )}
-
             <TextInput
               label="Username / Email"
+              required
               placeholder="Enter username or email"
               value={username}
               onChange={(e) => setUsername(e.currentTarget.value)}
-              required
               size="md"
             />
-
             <PasswordInput
               label="Password"
+              required
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.currentTarget.value)}
-              required
               size="md"
             />
-
             <Button
               type="submit"
               leftSection={<IconLogin size={16} />}

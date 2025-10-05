@@ -18,7 +18,9 @@ import {
 import { DataTable, DataTableColumn } from "../../components/DataTable";
 import { useUsers } from "../../hooks/api/useUsers";
 import { UserModal } from "../../components/UserModal";
-import type { User, UserRole } from "../../lib/api";
+import type { User as BaseUser, UserRole } from "../../lib/api";
+
+type User = BaseUser & { roleName?: string };
 
 export function UsersPage() {
   const [userModalOpened, setUserModalOpened] = useState(false);
@@ -58,6 +60,8 @@ export function UsersPage() {
         return "green";
       case "Lab":
         return "violet";
+      case "MedTech":
+        return "teal";
       default:
         return "gray";
     }
@@ -84,14 +88,28 @@ export function UsersPage() {
         sortable: true,
       },
       {
-        key: "role",
+        key: "roleName",
         title: "Role",
         sortable: true,
-        render: (user: User) => (
-          <Badge color={getRoleBadgeColor(user.role)} variant="light">
-            {user.role}
-          </Badge>
-        ),
+        render: (user: User) => {
+          const validRoles: UserRole[] = [
+            "SuperAdmin",
+            "Admin",
+            "Cashier",
+            "Lab",
+            "MedTech",
+          ];
+          const color = getRoleBadgeColor(
+            validRoles.includes(user.roleName as UserRole)
+              ? (user.roleName as UserRole)
+              : "MedTech"
+          );
+          return (
+            <Badge color={color} variant="light">
+              {user.roleName || "Unknown"}
+            </Badge>
+          );
+        },
       },
       {
         key: "isActive",

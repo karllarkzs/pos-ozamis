@@ -240,10 +240,8 @@ function App() {
           <Route
             path="/"
             element={
-              <Container size="sm" py="xl">
-                <Center h="100%" w="100%">
-                  <LoginPage onLogin={handleLogin} />
-                </Center>
+              <Container size="sm">
+                <LoginPage onLogin={handleLogin} />
               </Container>
             }
           />
