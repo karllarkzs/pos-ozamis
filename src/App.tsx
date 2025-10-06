@@ -1,4 +1,12 @@
-import { Container, Center, LoadingOverlay } from "@mantine/core";
+import {
+  Container,
+  Center,
+  LoadingOverlay,
+  Stack,
+  Text,
+  Button,
+  Box,
+} from "@mantine/core";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { createTauriAPI } from "./utils/tauri-api";
 import { useEffect } from "react";
@@ -143,11 +151,8 @@ function App() {
       }
     };
 
+    // fetch once on auth
     fetchSettings();
-
-    const interval = setInterval(fetchSettings, 300000);
-
-    return () => clearInterval(interval);
   }, [isAuthenticated, settings.dispatch]);
 
   const handleLogin = async (username: string, password: string) => {
@@ -223,7 +228,66 @@ function App() {
   };
 
   if (isLoading) {
-    return <LoadingOverlay visible />;
+    const hardReset = async () => {
+      localStorage.clear();
+      sessionStorage.clear();
+
+      try {
+        // IndexedDB (guard: not in all browsers)
+        const anyIDB = indexedDB as any;
+        const dbs = await anyIDB?.databases?.();
+        if (dbs && Array.isArray(dbs)) {
+          await Promise.all(
+            dbs.map(
+              (d: any) =>
+                new Promise<void>((res) => {
+                  const req = indexedDB.deleteDatabase(d.name);
+                  req.onsuccess = req.onerror = req.onblocked = () => res();
+                })
+            )
+          );
+        }
+
+        // Cache Storage API
+        if ("caches" in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+
+        // Service Workers
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } finally {
+        location.reload();
+      }
+    };
+
+    return (
+      <Box pos="relative" w="100vw" h="100vh">
+        {/* Keep your loading spinner */}
+        <LoadingOverlay visible zIndex={100} />
+
+        {/* Centered CTA ABOVE the overlay */}
+        <Center w="100%" h="100%" style={{ position: "relative", zIndex: 200 }}>
+          <Stack align="center" gap="xs">
+            <Text c="dimmed" size="sm">
+              If this screen hangs, you can force-clear app data:
+            </Text>
+            <Button
+              onClick={hardReset}
+              color="red"
+              variant="light"
+              radius="md"
+              size="md"
+            >
+              Clear app data & reload
+            </Button>
+          </Stack>
+        </Center>
+      </Box>
+    );
   }
 
   return (

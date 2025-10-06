@@ -14,6 +14,10 @@ import {
   ThemeIcon,
   Tooltip,
   Divider,
+  Modal,
+  ScrollArea,
+  Skeleton,
+  Code,
 } from "@mantine/core";
 import {
   IconClipboardText,
@@ -22,11 +26,13 @@ import {
   IconDiscount2,
   IconCurrencyPeso,
 } from "@tabler/icons-react";
-import { useInfiniteTransactions } from "../../hooks/api/useTransactions";
+import {
+  useInfiniteTransactions,
+  useTransaction,
+} from "../../hooks/api/useTransactions";
 import { formatCurrency } from "../../utils/currency";
 
 /* utils */
-const itemLabel = (n: number) => `${n} item${n === 1 ? "" : "s"}`;
 const pmColor = (pm: string) =>
   pm === "Cash"
     ? "green"
@@ -46,6 +52,7 @@ export function TransactionsTab({
   endDateStr?: string;
 }) {
   const [subtab, setSubtab] = useState<"all" | "discounted" | "voided">("all");
+  const [openedId, setOpenedId] = useState<string | null>(null);
 
   const {
     data,
@@ -69,7 +76,6 @@ export function TransactionsTab({
     [data]
   );
 
-  // replace your filtered useMemo with this:
   const filtered = useMemo(() => {
     switch (subtab) {
       case "voided":
@@ -82,7 +88,7 @@ export function TransactionsTab({
             (t.specialDiscount ?? 0) > 0
         );
       default:
-        // ALL = no extra filter (includes voided & non-voided)
+        // ALL = include everything (voided + non-voided)
         return rows;
     }
   }, [rows, subtab]);
@@ -133,15 +139,6 @@ export function TransactionsTab({
           <Tabs.Tab value="all" leftSection={<IconReceipt size={14} />}>
             All
           </Tabs.Tab>
-          <Tabs.Tab
-            value="discounted"
-            leftSection={<IconDiscount2 size={14} />}
-          >
-            Discounted
-          </Tabs.Tab>
-          <Tabs.Tab value="voided" leftSection={<IconTrashX size={14} />}>
-            Voided
-          </Tabs.Tab>
         </Tabs.List>
 
         {/* shared summary header */}
@@ -149,7 +146,10 @@ export function TransactionsTab({
 
         <Tabs.Panel value="all" pt="sm">
           <Paper withBorder>
-            <TransactionsTable rows={filtered} />
+            <TransactionsTable
+              rows={filtered}
+              onOpen={(id) => setOpenedId(id)}
+            />
             <ListPager
               hasNextPage={!!hasNextPage}
               fetchNextPage={fetchNextPage}
@@ -160,7 +160,11 @@ export function TransactionsTab({
 
         <Tabs.Panel value="discounted" pt="sm">
           <Paper withBorder>
-            <TransactionsTable rows={filtered} emphasizeDiscounts />
+            <TransactionsTable
+              rows={filtered}
+              emphasizeDiscounts
+              onOpen={(id) => setOpenedId(id)}
+            />
             <ListPager
               hasNextPage={!!hasNextPage}
               fetchNextPage={fetchNextPage}
@@ -171,7 +175,11 @@ export function TransactionsTab({
 
         <Tabs.Panel value="voided" pt="sm">
           <Paper withBorder>
-            <TransactionsTable rows={filtered} showVoidedBadge />
+            <TransactionsTable
+              rows={filtered}
+              showVoidedBadge
+              onOpen={(id) => setOpenedId(id)}
+            />
             <ListPager
               hasNextPage={!!hasNextPage}
               fetchNextPage={fetchNextPage}
@@ -180,6 +188,12 @@ export function TransactionsTab({
           </Paper>
         </Tabs.Panel>
       </Tabs>
+
+      {/* Details modal */}
+      <TransactionDetailsModal
+        id={openedId}
+        onClose={() => setOpenedId(null)}
+      />
     </Stack>
   );
 }
@@ -237,6 +251,7 @@ function TransactionsTable({
   rows,
   showVoidedBadge = false,
   emphasizeDiscounts = false,
+  onOpen,
 }: {
   rows: Array<{
     id: string;
@@ -257,6 +272,7 @@ function TransactionsTable({
   }>;
   showVoidedBadge?: boolean;
   emphasizeDiscounts?: boolean;
+  onOpen: (id: string) => void;
 }) {
   if (!rows.length)
     return (
@@ -300,8 +316,24 @@ function TransactionsTable({
               (t.regularDiscount ?? 0) > 0 ||
               (t.specialDiscount ?? 0) > 0;
 
+            // row click + keyboard open
+            const open = () => onOpen(t.id);
+            const onKey = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                open();
+              }
+            };
+
             return (
-              <Table.Tr key={t.id}>
+              <Table.Tr
+                key={t.id}
+                onClick={open}
+                onKeyDown={onKey}
+                tabIndex={0}
+                style={{ cursor: "pointer" }}
+                title="View transaction details"
+              >
                 <Table.Td>
                   <Stack gap={2}>
                     <Text size="sm" fw={600}>
@@ -332,9 +364,9 @@ function TransactionsTable({
                 </Table.Td>
 
                 <Table.Td ta="right">
-                  <Badge size="sm" variant="light" color="gray">
+                  <Text size="sm" fw={600}>
                     {t.itemCount}
-                  </Badge>
+                  </Text>
                 </Table.Td>
 
                 <Table.Td>
@@ -437,5 +469,215 @@ function ListPager({
         </Text>
       )}
     </Group>
+  );
+}
+
+/* ------------------ Details Modal ------------------ */
+
+function TransactionDetailsModal({
+  id,
+  onClose,
+}: {
+  id: string | null;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError, error } = useTransaction(id || "", {
+    enabled: !!id,
+  });
+
+  const t = data;
+
+  return (
+    <Modal
+      opened={!!id}
+      onClose={onClose}
+      title={<Text fw={700}>Transaction Details</Text>}
+      size="lg"
+      centered
+      withinPortal
+      padding="md"
+    >
+      {!id ? null : isLoading ? (
+        <Stack gap="sm">
+          <Skeleton height={12} />
+          <Skeleton height={12} width="60%" />
+          <Skeleton height={200} />
+        </Stack>
+      ) : isError ? (
+        <Alert color="red" title="Failed to load">
+          {(error as any)?.message ?? "Unknown error"}
+        </Alert>
+      ) : !t ? null : (
+        <Stack gap="md">
+          <Group gap="md" wrap="wrap">
+            <Group gap={6}>
+              <Text size="sm" c="dimmed">
+                Receipt #
+              </Text>
+              <Code>{t.receiptNumber}</Code>
+            </Group>
+            <Divider orientation="vertical" />
+            <Group gap={6}>
+              <Text size="sm" c="dimmed">
+                Date
+              </Text>
+              <Text size="sm">
+                {new Date(t.transactionDate).toLocaleString()}
+              </Text>
+            </Group>
+            <Divider orientation="vertical" />
+            <Group gap={6}>
+              <Text size="sm" c="dimmed">
+                Cashier
+              </Text>
+              <Text size="sm">{t.cashierName}</Text>
+            </Group>
+            <Divider orientation="vertical" />
+            <Group gap={6}>
+              <Badge variant="outline" color={pmColor(t.paymentMethod)}>
+                {t.paymentMethod}
+              </Badge>
+              {t.referenceNumber ? (
+                <Text size="xs" c="dimmed">
+                  Ref: {t.referenceNumber}
+                </Text>
+              ) : null}
+              {t.isVoided ? (
+                <Badge color="red" variant="filled">
+                  Voided
+                </Badge>
+              ) : null}
+            </Group>
+          </Group>
+
+          <ScrollArea.Autosize mah={320} type="auto">
+            <Table striped withColumnBorders highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Item</Table.Th>
+                  <Table.Th style={{ width: 110 }} ta="right">
+                    Qty
+                  </Table.Th>
+                  <Table.Th style={{ width: 140 }} ta="right">
+                    Unit Price
+                  </Table.Th>
+                  <Table.Th style={{ width: 140 }} ta="right">
+                    Line Total
+                  </Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {(t.items ?? []).map((it) => (
+                  <Table.Tr key={it.id}>
+                    <Table.Td>
+                      <Stack gap={2}>
+                        <Text size="sm" fw={600}>
+                          {it.itemName}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {it.itemType}
+                          {it.barcode ? ` • ${it.barcode}` : ""}
+                          {it.batchNumber ? ` • Batch: ${it.batchNumber}` : ""}
+                          {it.expirationDate
+                            ? ` • Exp: ${new Date(
+                                it.expirationDate
+                              ).toLocaleDateString()}`
+                            : ""}
+                        </Text>
+                      </Stack>
+                    </Table.Td>
+                    <Table.Td ta="right">
+                      <Text size="sm">{it.quantity}</Text>
+                    </Table.Td>
+                    <Table.Td ta="right">
+                      {formatCurrency(it.unitPrice)}
+                    </Table.Td>
+                    <Table.Td ta="right">
+                      <Text fw={600}>{formatCurrency(it.lineTotal)}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea.Autosize>
+
+          <Paper withBorder p="sm">
+            <Stack gap={6}>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Subtotal
+                </Text>
+                <Text size="sm">{formatCurrency(t.subTotal ?? 0)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Regular Discount
+                </Text>
+                <Text size="sm">{formatCurrency(t.regularDiscount ?? 0)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Special Discount
+                </Text>
+                <Text size="sm">{formatCurrency(t.specialDiscount ?? 0)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Total Discount
+                </Text>
+                <Text size="sm" fw={600}>
+                  {formatCurrency(t.discountAmount ?? 0)}
+                </Text>
+              </Group>
+              {"vatAmount" in t && typeof t.vatAmount === "number" && (
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">
+                    VAT
+                  </Text>
+                  <Text size="sm">{formatCurrency(t.vatAmount)}</Text>
+                </Group>
+              )}
+              <Divider my={4} />
+              <Group justify="space-between">
+                <Text fw={700}>Grand Total</Text>
+                <Group gap={6}>
+                  <IconCurrencyPeso size={16} />
+                  <Text fw={800}>{formatCurrency(t.totalAmount)}</Text>
+                </Group>
+              </Group>
+              {typeof t.changeAmount === "number" && t.changeAmount > 0 && (
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">
+                    Change
+                  </Text>
+                  <Text size="sm">{formatCurrency(t.changeAmount)}</Text>
+                </Group>
+              )}
+              {t.isVoided && (
+                <>
+                  <Divider my={4} />
+                  <Group gap={8}>
+                    <Badge color="red">Voided</Badge>
+                    {t.voidedAt ? (
+                      <Text size="sm" c="dimmed">
+                        {new Date(t.voidedAt).toLocaleString()}
+                      </Text>
+                    ) : null}
+                  </Group>
+                  {t.voidReason ? (
+                    <Text size="sm">Reason: {t.voidReason}</Text>
+                  ) : null}
+                  {t.voidedBy ? (
+                    <Text size="sm" c="dimmed">
+                      By: {t.voidedBy}
+                    </Text>
+                  ) : null}
+                </>
+              )}
+            </Stack>
+          </Paper>
+        </Stack>
+      )}
+    </Modal>
   );
 }

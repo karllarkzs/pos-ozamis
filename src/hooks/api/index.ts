@@ -5,16 +5,8 @@ export * from "./useReagents";
 export * from "./useReports";
 export * from "./useRoles";
 export * from "./useUsers";
-export {
-  useEmployeeSales,
-  useExpenseAnalysis,
-  useTopPerformingTests,
-  useExpenseStatistics,
-  useExpensesByCategory,
-  useExpensesList,
-  useExpenseCategories,
-  useExpensesByPurchaser,
-} from "./useReports";
+export * from "./useExpenses";
+export { useEmployeeSales, useTopPerformingTests } from "./useReports";
 
 export type {
   CatalogItem,
