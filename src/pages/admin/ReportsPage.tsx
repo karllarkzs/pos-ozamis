@@ -48,6 +48,7 @@ import { TransactionsTab } from "../../components/reports/TransactionTable";
 import {
   useExpenseCategories,
   useExpensesByCategory,
+  useExpensesList,
   useExpenseStatistics,
 } from "../../hooks/api/useExpenses";
 import ExpensesTab from "../../components/reports/ExpensesTab";
@@ -735,6 +736,16 @@ export function ReportsPage() {
       endDateStr
     );
 
+    // recent expenses for the selected range (top 5)
+    const {
+      data: expensesResp,
+      isLoading: expLoading,
+      error: expError,
+    } = useExpensesList(startDateStr, endDateStr, {
+      pageNumber: 1,
+      pageSize: 5,
+    });
+
     if (isLoading) {
       return (
         <Center py="xl">
@@ -772,15 +783,55 @@ export function ReportsPage() {
       (data.mayaSales || 0) +
       (data.goTymeSales || 0);
 
+    // your hook returns the full object; the array is at .data
+    const expenses: Array<{
+      id: string;
+      purchasedBy: string;
+      date: string;
+      reason: string;
+      total: number;
+      category: string | null;
+      paymentMethod: "Cash" | "GCash" | "Maya" | "GoTyme" | string;
+      reference?: string | null;
+      itemCount?: number;
+      recordedBy?: string;
+    }> = expensesResp?.data ?? [];
+
+    const paymentColor = (pm: string) => {
+      switch (pm?.toLowerCase()) {
+        case "cash":
+          return "green";
+        case "gcash":
+          return "blue";
+        case "maya":
+          return "indigo";
+        case "gotyme":
+          return "violet";
+        default:
+          return "gray";
+      }
+    };
+    const fmtDate = (d: string | Date) =>
+      new Date(d).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        timeZone: "Asia/Manila", // <- your local TZ
+      });
+
     return (
       <Stack gap="md">
         <Group justify="space-between" align="center">
           <Text fw={600} size="lg">
-            {data.periodLabel}
+            {
+              selectedPeriod === "today"
+                ? `Today (${fmtDate(new Date())})`
+                : data.periodLabel /* or build labels locally for all periods */
+            }
           </Text>
+
           <Badge variant="light" color="gray">
-            {new Date(data.startDate).toLocaleDateString()} –{" "}
-            {new Date(data.endDate).toLocaleDateString()}
+            {fmtDate(data.startDate)} – {fmtDate(data.endDate)}
           </Badge>
         </Group>
 
@@ -824,114 +875,235 @@ export function ReportsPage() {
             </Stack>
           </Paper>
 
-          {/* RIGHT: Payment methods with totals row */}
-          <Paper p="md" withBorder>
-            <Text fw={600} mb="sm">
-              Payment Methods
-            </Text>
-            <Table withTableBorder withColumnBorders>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Method</Table.Th>
-                  <Table.Th ta="right">Transactions</Table.Th>
-                  <Table.Th ta="right">Amount</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {[
-                  {
-                    label: "Cash",
-                    tx: data.cashTransactions,
-                    amt: data.cashSales,
-                    color: "green",
-                  },
-                  {
-                    label: "GCash",
-                    tx: data.gcashTransactions,
-                    amt: data.gcashSales,
-                    color: "blue",
-                  },
-                  {
-                    label: "Maya",
-                    tx: data.mayaTransactions,
-                    amt: data.mayaSales,
-                    color: "indigo",
-                  },
-                  {
-                    label: "GoTyme",
-                    tx: data.goTymeTransactions,
-                    amt: data.goTymeSales,
-                    color: "violet",
-                  },
-                ].map((row) => (
-                  <Table.Tr key={row.label}>
-                    <Table.Td>
-                      <Badge variant="outline" color={row.color}>
-                        {row.label}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text fw={600}>{row.tx ?? 0}</Text>
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text fw={700}>{formatCurrency(row.amt ?? 0)}</Text>
-                    </Table.Td>
+          {/* RIGHT: Payment methods + Recent expenses */}
+          <Stack gap="md">
+            <Paper p="md" withBorder>
+              <Text fw={600} mb="sm">
+                Payment Methods
+              </Text>
+              <Table withTableBorder withColumnBorders>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Method</Table.Th>
+                    <Table.Th ta="right">Transactions</Table.Th>
+                    <Table.Th ta="right">Amount</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-              <Table.Tfoot>
-                <Table.Tr>
-                  <Table.Th>Total</Table.Th>
-                  <Table.Th ta="right">
-                    <Text fw={700}>{totalPmTx.toLocaleString()}</Text>
-                  </Table.Th>
-                  <Table.Th ta="right">
-                    <Text fw={800}>{formatCurrency(totalPmAmt)}</Text>
-                  </Table.Th>
-                </Table.Tr>
-              </Table.Tfoot>
-            </Table>
-          </Paper>
+                </Table.Thead>
+                <Table.Tbody>
+                  {[
+                    {
+                      label: "Cash",
+                      tx: data.cashTransactions,
+                      amt: data.cashSales,
+                      color: "green",
+                    },
+                    {
+                      label: "GCash",
+                      tx: data.gcashTransactions,
+                      amt: data.gcashSales,
+                      color: "blue",
+                    },
+                    {
+                      label: "Maya",
+                      tx: data.mayaTransactions,
+                      amt: data.mayaSales,
+                      color: "indigo",
+                    },
+                    {
+                      label: "GoTyme",
+                      tx: data.goTymeTransactions,
+                      amt: data.goTymeSales,
+                      color: "violet",
+                    },
+                  ].map((row) => (
+                    <Table.Tr key={row.label}>
+                      <Table.Td>
+                        <Badge variant="outline" color={row.color}>
+                          {row.label}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        <Text fw={600}>{row.tx ?? 0}</Text>
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        <Text fw={700}>{formatCurrency(row.amt ?? 0)}</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+                <Table.Tfoot>
+                  <Table.Tr>
+                    <Table.Th>Total</Table.Th>
+                    <Table.Th ta="right">
+                      <Text fw={700}>{totalPmTx.toLocaleString()}</Text>
+                    </Table.Th>
+                    <Table.Th ta="right">
+                      <Text fw={800}>{formatCurrency(totalPmAmt)}</Text>
+                    </Table.Th>
+                  </Table.Tr>
+                </Table.Tfoot>
+              </Table>
+            </Paper>
+
+            <Paper p="md" withBorder>
+              <Group justify="space-between" mb="sm">
+                <Text fw={600}>Recent Expenses</Text>
+                <Badge variant="light">{expenses?.length ?? 0} shown</Badge>
+              </Group>
+
+              {expError ? (
+                <Alert color="red" title="Error loading expenses">
+                  {(expError as any).message || "Failed to load"}
+                </Alert>
+              ) : expLoading ? (
+                <Center py="sm">
+                  <Loader size="sm" />
+                </Center>
+              ) : expenses && expenses.length > 0 ? (
+                <Table striped highlightOnHover withRowBorders={false}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Date</Table.Th>
+                      <Table.Th>Reason / Category</Table.Th>
+                      <Table.Th>Purchased By</Table.Th>
+                      <Table.Th>Payment</Table.Th>
+                      <Table.Th ta="right">Amount</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {expenses.map((exp) => (
+                      <Table.Tr key={exp.id}>
+                        <Table.Td>
+                          <Text size="sm">
+                            {new Date(exp.date).toLocaleDateString()}
+                          </Text>
+                        </Table.Td>
+
+                        <Table.Td>
+                          <Group gap={6} wrap="nowrap">
+                            <Text size="sm" fw={500}>
+                              {exp.reason || "—"}
+                            </Text>
+                            {exp.category ? (
+                              <Badge size="xs" variant="light">
+                                {exp.category}
+                              </Badge>
+                            ) : null}
+                          </Group>
+                          {exp.recordedBy ? (
+                            <Text size="xs" c="dimmed">
+                              Recorded by: {exp.recordedBy}
+                            </Text>
+                          ) : null}
+                        </Table.Td>
+
+                        <Table.Td>
+                          <Text size="sm">{exp.purchasedBy || "—"}</Text>
+                        </Table.Td>
+
+                        <Table.Td>
+                          <Badge
+                            variant="outline"
+                            color={paymentColor(exp.paymentMethod)}
+                          >
+                            {exp.paymentMethod || "—"}
+                          </Badge>
+                        </Table.Td>
+
+                        <Table.Td ta="right">
+                          <Text fw={700}>{formatCurrency(exp.total ?? 0)}</Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              ) : (
+                <Text c="dimmed" size="sm">
+                  No expenses found for this range.
+                </Text>
+              )}
+            </Paper>
+          </Stack>
         </SimpleGrid>
 
-        {/* BOTTOM: transactions column only */}
-        <Stack gap="md">
-          <Paper p="md" withBorder>
-            <Group justify="space-between">
-              <Text c="dimmed" fw={700} size="sm">
-                Total Sales Transactions
-              </Text>
-              <Text fw={800}>{data.nonDiscountedTransactions}</Text>
-            </Group>
-          </Paper>
+        {/* BOTTOM: transaction counters */}
+        <div className="no-print">
+          <Stack gap="md">
+            <Paper p="md" withBorder>
+              <Group justify="space-between">
+                <Text c="dimmed" fw={700} size="sm">
+                  Total Sales Transactions
+                </Text>
+                <Text fw={800}>{data.nonDiscountedTransactions}</Text>
+              </Group>
+            </Paper>
 
-          <Paper p="md" withBorder>
-            <Group justify="space-between">
-              <Text c="dimmed" fw={700} size="sm">
-                Discounted Transactions
-              </Text>
-              <Text fw={800}>{data.discountedTransactions}</Text>
-            </Group>
-          </Paper>
+            <Paper p="md" withBorder>
+              <Group justify="space-between">
+                <Text c="dimmed" fw={700} size="sm">
+                  Discounted Transactions
+                </Text>
+                <Text fw={800}>{data.discountedTransactions}</Text>
+              </Group>
+            </Paper>
 
-          <Paper p="md" withBorder>
-            <Group justify="space-between">
-              <Text c="dimmed" fw={700} size="sm">
-                Voided Transactions
-              </Text>
-              <Text fw={800}>{data.voidedTransactions}</Text>
-            </Group>
-          </Paper>
+            <Paper p="md" withBorder>
+              <Group justify="space-between">
+                <Text c="dimmed" fw={700} size="sm">
+                  Voided Transactions
+                </Text>
+                <Text fw={800}>{data.voidedTransactions}</Text>
+              </Group>
+            </Paper>
 
-          <Paper p="md" withBorder>
-            <Group justify="space-between">
-              <Text c="dimmed" fw={700} size="sm">
-                Overall Transactions
-              </Text>
-              <Text fw={800}>{data.totalTransactions}</Text>
-            </Group>
-          </Paper>
-        </Stack>
+            <Paper p="md" withBorder>
+              <Group justify="space-between">
+                <Text c="dimmed" fw={700} size="sm">
+                  Overall Transactions
+                </Text>
+                <Text fw={800}>{data.totalTransactions}</Text>
+              </Group>
+            </Paper>
+          </Stack>
+        </div>
+        <div className="only-print">
+          <Table className="avoid-break">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Metric</Table.Th>
+                <Table.Th style={{ textAlign: "right" }}>Count</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <Table.Tr>
+                <Table.Td>Total Sales Transactions</Table.Td>
+                <Table.Td style={{ textAlign: "right" }}>
+                  {data.nonDiscountedTransactions}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Discounted Transactions</Table.Td>
+                <Table.Td style={{ textAlign: "right" }}>
+                  {data.discountedTransactions}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Voided Transactions</Table.Td>
+                <Table.Td style={{ textAlign: "right" }}>
+                  {data.voidedTransactions}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>
+                  <b>Overall Transactions</b>
+                </Table.Td>
+                <Table.Td style={{ textAlign: "right" }}>
+                  <b>{data.totalTransactions}</b>
+                </Table.Td>
+              </Table.Tr>
+            </Table.Tbody>
+          </Table>
+        </div>
       </Stack>
     );
   };
@@ -940,60 +1112,78 @@ export function ReportsPage() {
     <>
       <Global
         styles={`
-          @page { size: A4; margin: 14mm; }
+    @page { size: A4; margin: 6mm; }
 
-          @media print {
-            html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            body { font-size: 12.5px; }           /* restores the tighter, cleaner type */
-            .no-print { display: none !important; }
-            .only-print { display: block !important; }
+    /* Hide print-only bits on screen only */
+    @media screen {
+      .only-print { display: none !important; }
+    }
 
-            /* keep the in-app look */
-            .print-container { max-width: 1200px !important; margin: 0 auto !important; padding: 0 24px !important; }
-            .mantine-Paper-root { background: #fff !important; border: 1px solid var(--mantine-color-gray-3) !important; box-shadow: none !important; }
-            .mantine-Table-table, .mantine-Table-thead, .mantine-Table-tbody, .mantine-Table-tfoot,
-            .mantine-Table-tr, .mantine-Table-th, .mantine-Table-td { border-color: var(--mantine-color-gray-3) !important; }
-            .mantine-Tabs-list { display: none !important; }
-            h1,h2,h3,h4,h5,h6 { break-after: avoid; }
-            .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+    @media print {
+      html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-            /* ---- PRINT HEADER (company + report title + dates) ---- */
-            .print-company { text-align: center; font-weight: 800; font-size: 18px; letter-spacing: .3px; margin: 0 0 4px; }
-            .print-title   { text-align: center; font-weight: 700; font-size: 16px; margin: 0 0 4px; }
-            .print-subtitle{ text-align: center; color: var(--mantine-color-gray-7); margin-bottom: 12px; }
+      /* One base size everywhere */
+      .print-container, .print-container * {
+        font-size: 9px !important;
+        line-height: 1.24 !important;
+      }
 
-            /* ---- SIGNATURES pinned to bottom (safe for page 1) ---- */
-            .signature-fixed {
-              position: fixed;
-              left: 14mm; right: 14mm; bottom: 14mm;   /* aligns to @page margins */
-              break-inside: avoid; page-break-inside: avoid;
-            }
+      /* Show print-only bits; hide screen-only */
+      .only-print { display: block !important; }
+      .no-print   { display: none  !important; }
 
-            /* Reserve space so fixed footer won't overlap content */
-            .signature-spacer {
-              height: 44mm;                             /* tune if you change footer height */
-              display: flex; align-items: flex-end; justify-content: center;
-            }
+      /* Header (bigger than body and centered) */
+      .print-company {
+        text-align: center !important;
+        font-weight: 800;
+        font-size: 12px !important;
+        letter-spacing: .2px;
+        margin: 0 0 2px !important;
+        width: 100%;
+      }
+      .print-title {
+        text-align: center !important;
+        font-weight: 700;
+        font-size: 10.5px !important;
+        margin: 0 0 6px !important;
+        width: 100%;
+      }
 
-            /* “Nothing Follows” styling */
-            .nothing-follows {
-              font-size: 11px; color: var(--mantine-color-gray-7);
-              text-align: center; width: 100%;
-              display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
-            }
-            .nothing-follows::before, .nothing-follows::after {
-              content: ""; flex: 1; height: 1px; background: var(--mantine-color-gray-4);
-            }
+      /* Compact layout + thin separators (no boxes) */
+      .print-container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      .mantine-Tabs-list { display: none !important; }
+      .print-container .mantine-Paper-root {
+        border: 0 !important; box-shadow: none !important; background: transparent !important;
+        padding: 0 !important; margin: 0 0 2px !important;
+        border-top: .45px solid var(--mantine-color-gray-4) !important; border-radius: 0 !important;
+      }
+      .print-container .mantine-Paper-root:first-of-type { border-top: 0 !important; }
+      .print-container .mantine-Stack-root { gap: 2px !important; }
+      .print-container .mantine-Group-root { gap: 1px !important; }
+      .print-container .mantine-SimpleGrid-root { gap: 4px !important; }
+      h1,h2,h3,h4,h5,h6 { margin: 0 0 2px !important; break-after: avoid; }
 
-            /* Signature grid */
-            .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-            .sig-box  { padding-top: 8px; }
-            .sig-line { border-top: 1px solid var(--mantine-color-gray-6); margin-top: 22px; }
-            .sig-label{ font-size: 12px; color: var(--mantine-color-gray-7); }
-          }
+      /* Tables: match body size; tiny padding */
+      .print-container .mantine-Table-table { border-collapse: collapse !important; border: 0 !important; }
+      .print-container .mantine-Table-th,
+      .print-container .mantine-Table-td {
+        border: 0 !important; border-bottom: .45px solid var(--mantine-color-gray-4) !important;
+        padding: 1px 2px !important; font-size: 9px !important; line-height: 1.22 !important;
+      }
+      .print-container .mantine-Table-thead .mantine-Table-th {
+        border-bottom: .6px solid var(--mantine-color-gray-6) !important;
+        font-weight: 700 !important; font-size: 9.2px !important;
+      }
 
-          .only-print { display: none; }
-        `}
+      .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+
+      /* Signature block: push further down */
+      .signature-section { margin-top: 14mm !important; break-inside: avoid; }
+      .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .sig-line  { border-top: .6px solid var(--mantine-color-gray-6); margin-top: 10px; height: 0; }
+      .sig-label { font-size: 9px !important; color: var(--mantine-color-gray-7); text-align: center; }
+    }
+  `}
       />
 
       <Container size="xl" py="md" className="print-container">
@@ -1084,14 +1274,14 @@ export function ReportsPage() {
                 >
                   Sales Overview
                 </Tabs.Tab>
-                <Tabs.List grow>
-                  <Tabs.Tab
-                    value="transactions"
-                    leftSection={<IconClipboardText size={16} />}
-                  >
-                    Transactions
-                  </Tabs.Tab>
-                </Tabs.List>
+
+                <Tabs.Tab
+                  value="transactions"
+                  leftSection={<IconClipboardText size={16} />}
+                >
+                  Transactions
+                </Tabs.Tab>
+
                 <Tabs.Tab
                   value="products"
                   leftSection={<IconPackage size={16} />}
@@ -1137,14 +1327,14 @@ export function ReportsPage() {
               </Tabs.Panel>
             </Tabs>
 
-            <div className="only-print signature-fixed">
+            <div className="only-print signature-section">
               <div className="signature-grid">
-                <div className="sig-box">
-                  <div className="sig-line"></div>
+                <div>
+                  <div className="sig-line" />
                   <Text className="sig-label">Reported by:</Text>
                 </div>
-                <div className="sig-box">
-                  <div className="sig-line"></div>
+                <div>
+                  <div className="sig-line" />
                   <Text className="sig-label">Received by:</Text>
                 </div>
               </div>

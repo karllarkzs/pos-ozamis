@@ -293,13 +293,12 @@ export function POSPage() {
     cart.removeItem(id);
   };
 
+  // NEW
   const hasStockIssues = useMemo(() => {
-    return cart.items.some((cartItem) => {
-      const catalogItem = filteredProducts.find((p) => p.id === cartItem.id);
-
-      return !catalogItem || cartItem.quantity > catalogItem.quantity;
-    });
-  }, [cart.items, filteredProducts]);
+    return cart.items.some(
+      (cartItem) => cartItem.quantity > (cartItem.maxStock ?? Infinity)
+    );
+  }, [cart.items]);
 
   const handleConfirmTransaction = useCallback(() => {
     if (!user || cart.isEmpty || hasStockIssues) return;
@@ -698,7 +697,7 @@ export function POSPage() {
         <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
           <div style={{ flex: "0 0 300px" }}>
             <TextInput
-              placeholder="Search by name..."
+              placeholder="Search by barcode or name..."
               value={searchQuery}
               onChange={handleSearchChange}
               leftSection={<IconSearch size={16} />}

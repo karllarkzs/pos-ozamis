@@ -47,6 +47,7 @@ export function useInfiniteTransactions(
         : undefined;
     },
     staleTime: 30 * 1000,
+    refetchOnMount: "always",
   });
 }
 
