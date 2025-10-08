@@ -1,12 +1,7 @@
 import { createSlice, PayloadAction, createSelector } from "@reduxjs/toolkit";
+import type { CartItem } from "../../types/cart.types";
 
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  maxStock: number;
-}
+// CartItem type is sourced from ../../types/cart.types
 
 export interface Discount {
   discountId: string | null;
@@ -40,6 +35,8 @@ export interface AddToCartPayload {
   price: number;
   quantity: number;
   maxStock: number;
+  itemType: "Product" | "Test";
+  isDiscountable: boolean;
 }
 
 export interface UpdateQuantityPayload {
@@ -79,6 +76,8 @@ const cartSlice = createSlice({
           price,
           quantity: finalQuantity,
           maxStock,
+          itemType: action.payload.itemType,
+          isDiscountable: action.payload.isDiscountable,
         });
       }
       state.lastUpdated = new Date().toISOString();
@@ -205,6 +204,11 @@ export const selectCartSubtotal = (state: { cart: CartState }) =>
     0
   );
 
+export const selectCartDiscountableSubtotal = (state: { cart: CartState }) =>
+  state.cart.items
+    .filter((item) => item.isDiscountable)
+    .reduce((total, item) => total + item.price * item.quantity, 0);
+
 export const selectCartVAT = (state: { cart: CartState; settings: any }) => {
   const subtotal = selectCartSubtotal(state);
   const showVat = state.settings?.settings?.showVat ?? false;
@@ -217,29 +221,79 @@ export const selectCartVAT = (state: { cart: CartState; settings: any }) => {
   return subtotal * (vatAmount / 100);
 };
 
+export const selectCartDiscountableVAT = (state: {
+  cart: CartState;
+  settings: any;
+}) => {
+  const discountableSubtotal = selectCartDiscountableSubtotal(state);
+  const showVat = state.settings?.settings?.showVat ?? false;
+  const vatAmount = state.settings?.settings?.vatAmount ?? 0;
+
+  if (!showVat || vatAmount === 0) {
+    return 0;
+  }
+
+  return discountableSubtotal * (vatAmount / 100);
+};
+
 export const selectCartTotal = (state: { cart: CartState; settings: any }) => {
   const subtotal = selectCartSubtotal(state);
   const vat = selectCartVAT(state);
   const baseTotal = subtotal + vat;
 
+  const discountableSubtotal = selectCartDiscountableSubtotal(state);
+  const discountableVAT = selectCartDiscountableVAT(state);
+  const discountableBase = discountableSubtotal + discountableVAT;
+
   const { discountPercent, specialDiscountAmount } = state.cart.discount;
 
-  const regularDiscountAmount = baseTotal * (discountPercent / 100);
+  const regularDiscountAmount = discountableBase * (discountPercent / 100);
 
-  const finalTotal = baseTotal - regularDiscountAmount - specialDiscountAmount;
+  const remainingDiscountableAfterRegular = Math.max(
+    0,
+    discountableBase - regularDiscountAmount
+  );
+  const cappedSpecialDiscount = Math.min(
+    specialDiscountAmount,
+    remainingDiscountableAfterRegular
+  );
+
+  const finalTotal = baseTotal - regularDiscountAmount - cappedSpecialDiscount;
 
   return Math.max(0, finalTotal);
 };
 
 export const selectCartDiscountAmounts = createSelector(
-  [selectCartSubtotal, selectCartVAT, selectCartDiscount],
-  (subtotal, vat, discount) => {
+  [
+    selectCartSubtotal,
+    selectCartVAT,
+    selectCartDiscountableSubtotal,
+    selectCartDiscountableVAT,
+    selectCartDiscount,
+  ],
+  (subtotal, vat, discountableSubtotal, discountableVat, discount) => {
     const baseTotal = subtotal + vat;
+    const discountableBase = discountableSubtotal + discountableVat;
     const { discountPercent, specialDiscountAmount } = discount;
 
+    const regularDiscountAmount = discountableBase * (discountPercent / 100);
+    const remainingDiscountableAfterRegular = Math.max(
+      0,
+      discountableBase - regularDiscountAmount
+    );
+    const cappedSpecialDiscount = Math.min(
+      specialDiscountAmount,
+      remainingDiscountableAfterRegular
+    );
+
     return {
-      regularDiscountAmount: baseTotal * (discountPercent / 100),
-      specialDiscountAmount: specialDiscountAmount,
+      regularDiscountAmount,
+      specialDiscountAmount: cappedSpecialDiscount,
+      baseTotal,
+    } as {
+      regularDiscountAmount: number;
+      specialDiscountAmount: number;
+      baseTotal: number;
     };
   }
 );

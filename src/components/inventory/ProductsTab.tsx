@@ -1,37 +1,28 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Group,
-  Button,
-  TextInput,
-  Select,
-  Paper,
-  Text,
   Badge,
+  Button,
   Checkbox,
+  Group,
+  Paper,
+  Select,
+  Text,
+  TextInput,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
-  IconEdit,
-  IconTrash,
-  IconSearch,
-  IconAlertTriangle,
-  IconClock,
-  IconPrinter,
   IconAdjustments,
-  IconDiscount,
-  IconHeartPlus,
-  IconPlus,
-  IconCross,
-  IconDropletPlus,
-  IconDiscount2,
-  IconDiscountCheckFilled,
-  IconFlagDiscount,
-  IconPercentage,
-  IconEyeDiscount,
+  IconAlertTriangle,
   IconCirclePercentage,
+  IconClock,
+  IconDropletPlus,
+  IconEdit,
+  IconPrinter,
+  IconSearch,
+  IconTrash,
 } from "@tabler/icons-react";
-import { DataTable, DataTableColumn } from "../DataTable";
+import { useMutation } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useInfiniteProducts,
   useProductsReferenceData,
@@ -40,11 +31,11 @@ import {
 import { useDebounce } from "../../hooks/useDebounce";
 import type { Product, ProductFilters } from "../../lib/api";
 import { apiEndpoints } from "../../lib/api";
-import { useMutation } from "@tanstack/react-query";
 import { formatCurrency } from "../../utils/currency";
-import { ProductSummaryStats } from "../ProductSummaryStats";
+import { DataTable, DataTableColumn } from "../DataTable";
 import { EditProductModal } from "../EditProductModal";
 import { PrintPreviewModal } from "../PrintPreviewModal";
+import { ProductSummaryStats } from "../ProductSummaryStats";
 import { StockAdjustmentModal } from "../StockAdjustmentModal";
 
 interface ProductsTabProps {
@@ -243,7 +234,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     setIsNoStock(null);
     setIsExpired(null);
     setIsExpiringSoon(null);
-
+    setIsPhilHealth(false);
     switch (filterType) {
       case "low-stock":
         setIsLowStock(true);
@@ -569,6 +560,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                   : null
               }
               onChange={(value) => {
+                setIsPhilHealth(false);
                 if (value === "low") {
                   setIsLowStock(true);
                   setIsNoStock(null);
@@ -602,6 +594,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                   : null
               }
               onChange={(value) => {
+                setIsPhilHealth(false);
                 if (value === "expired") {
                   setIsExpired(true);
                   setIsExpiringSoon(null);
@@ -633,7 +626,10 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
             <Select
               placeholder="Type"
               value={typeFilter}
-              onChange={setTypeFilter}
+              onChange={(v) => {
+                setIsPhilHealth(false);
+                setTypeFilter(v);
+              }}
               data={referenceData?.productTypes?.data || []}
               clearable
             />
@@ -643,7 +639,10 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
             <Select
               placeholder="Category"
               value={categoryFilter}
-              onChange={setCategoryFilter}
+              onChange={(v) => {
+                setIsPhilHealth(false);
+                setCategoryFilter(v);
+              }}
               data={referenceData?.categories?.data || []}
               clearable
             />
@@ -653,7 +652,10 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
             <Select
               placeholder="Formulation"
               value={formulationFilter}
-              onChange={setFormulationFilter}
+              onChange={(v) => {
+                setIsPhilHealth(false);
+                setFormulationFilter(v);
+              }}
               data={referenceData?.formulations?.data || []}
               clearable
             />
@@ -663,7 +665,10 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
             <Select
               placeholder="Location"
               value={locationFilter}
-              onChange={setLocationFilter}
+              onChange={(v) => {
+                setIsPhilHealth(false);
+                setLocationFilter(v);
+              }}
               data={referenceData?.locations?.data || []}
               clearable
             />

@@ -359,7 +359,7 @@ function TransactionsTable({
                 <Table.Td>
                   <Text size="sm">{t.cashierName}</Text>
                   <Text size="xs" c="dimmed">
-                    {t.processedBy}
+                    {t.cashierName}
                   </Text>
                 </Table.Td>
 

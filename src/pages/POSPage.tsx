@@ -38,6 +38,8 @@ import {
   IconSettings,
   IconReceipt,
   IconX,
+  IconStar,
+  IconCirclePercentage,
 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "../components/DataTable";
 import { POSLayout } from "../components/POSLayout";
@@ -387,14 +389,39 @@ export function POSPage() {
       sortable: true,
       sortKey: "name",
       render: (item) => (
-        <Text size="sm" style={{ lineHeight: 1.2, wordBreak: "break-word" }}>
-          {item.name}
-          {item.itemType === "Test" && (
-            <Badge size="xs" color="blue" ml={4}>
-              Test
-            </Badge>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          {item.isDiscountable && (
+            <IconCirclePercentage
+              size={16}
+              style={{
+                color: "var(--mantine-color-green-6)",
+                marginRight: 4,
+                minWidth: "16px",
+              }}
+            />
           )}
-        </Text>
+          <Text
+            size="sm"
+            style={{
+              lineHeight: 1.2,
+              wordBreak: "break-word",
+              justifyContent: "center",
+            }}
+          >
+            {item.name}
+            {item.itemType === "Test" && (
+              <Badge size="xs" color="blue" ml={4}>
+                Test
+              </Badge>
+            )}
+          </Text>
+        </div>
       ),
     },
     {
@@ -485,9 +512,27 @@ export function POSPage() {
       title: "Name",
       width: 140,
       render: (item) => (
-        <Text size="sm" style={{ lineHeight: 1.2, wordBreak: "break-word" }}>
-          {item.name}
-        </Text>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          {item.isDiscountable && (
+            <IconCirclePercentage
+              size={16}
+              style={{
+                color: "var(--mantine-color-green-6)",
+                marginRight: 4,
+                minWidth: "16px",
+              }}
+            />
+          )}
+          <Text size="sm" style={{ lineHeight: 1.2, wordBreak: "break-word" }}>
+            {item.name}
+          </Text>
+        </div>
       ),
     },
     {

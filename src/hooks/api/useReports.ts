@@ -397,13 +397,15 @@ export function useEmployeeSales(startDate: string, endDate: string) {
         pageSize: 1000,
       });
 
-      const employeeMap = new Map();
+      const employeeMap = new Map<string, any>();
       response.data.data.forEach((transaction: any) => {
-        const key = transaction.processedBy;
-        if (!employeeMap.has(key)) {
-          employeeMap.set(key, {
-            employeeId: key,
-            employeeName: key,
+        const id: string = transaction.cashierId || transaction.processedBy || "unknown";
+        const name: string = transaction.cashierName || transaction.processedBy || "Unknown";
+
+        if (!employeeMap.has(id)) {
+          employeeMap.set(id, {
+            employeeId: id,
+            employeeName: name,
             totalSales: 0,
             totalTransactions: 0,
             itemsSold: 0,
@@ -411,10 +413,14 @@ export function useEmployeeSales(startDate: string, endDate: string) {
           });
         }
 
-        const emp = employeeMap.get(key);
-        emp.totalSales += transaction.totalAmount;
+        const emp = employeeMap.get(id);
+        // Keep the most complete/latest display name seen
+        if (name && name !== "Unknown") {
+          emp.employeeName = name;
+        }
+        emp.totalSales += transaction.totalAmount || 0;
         emp.totalTransactions += 1;
-        emp.itemsSold += transaction.itemCount;
+        emp.itemsSold += transaction.itemCount || 0;
         emp.transactions.push(transaction);
       });
 
