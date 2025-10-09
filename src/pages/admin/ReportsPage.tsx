@@ -864,13 +864,22 @@ export function ReportsPage() {
                 </Text>
               </Group>
 
-              <Group justify="space-between">
+              <Group justify="space-between" className="no-print">
                 <Text c="dimmed" size="sm" fw={700}>
                   Net Sales
                 </Text>
-                <Text fw={800} c="green">
+                <Text fw={800} c={data.netSales >= 0 ? "green" : "red"}>
                   {formatCurrency(data.netSales)}
                 </Text>
+              </Group>
+              <Group
+                justify="space-between"
+                className="only-print print-totals-row"
+              >
+                <Text size="sm" fw={800}>
+                  Net Sales
+                </Text>
+                <Text fw={900}>{formatCurrency(data.netSales)}</Text>
               </Group>
             </Stack>
           </Paper>
@@ -948,7 +957,15 @@ export function ReportsPage() {
             <Paper p="md" withBorder>
               <Group justify="space-between" mb="sm">
                 <Text fw={600}>Recent Expenses</Text>
-                <Badge variant="light">{expenses?.length ?? 0} shown</Badge>
+                <Group gap={8}>
+                  <Badge variant="light">{expenses?.length ?? 0} shown</Badge>
+                  <span className="print-chip print-chip--danger">
+                    Total:{" "}
+                    {formatCurrency(
+                      expenses.reduce((s, e) => s + (e.total ?? 0), 0)
+                    )}
+                  </span>
+                </Group>
               </Group>
 
               {expError ? (
@@ -1182,6 +1199,49 @@ export function ReportsPage() {
       .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .sig-line  { border-top: .6px solid var(--mantine-color-gray-6); margin-top: 10px; height: 0; }
       .sig-label { font-size: 9px !important; color: var(--mantine-color-gray-7); text-align: center; }
+
+      .kpi-row { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 6px; 
+        margin: 4px 0 8px; 
+      }
+      .kpi {
+        border: .6px solid #c7c7c7;
+        border-radius: 4px;
+        padding: 6px 8px;
+        background: #f7f7f7;
+      }
+      .kpi label {
+        display:block; 
+        font-weight: 700; 
+        font-size: 9.2px; 
+        color:#555; 
+        margin-bottom:2px;
+      }
+      .kpi strong {
+        font-size: 12px; 
+        line-height:1.1;
+      }
+
+      /* Net Sales emphasis */
+      .kpi--net.pos { background:#e6f4ea; border-color:#8bcf9a; color:#0b6a34; }
+      .kpi--net.neg { background:#fde8e8; border-color:#f5b5b5; color:#a31212; }
+
+      /* Subtle highlight for totals inside the left totals card */
+      .print-totals-row { background: #49fa38f5; border-radius:3px; padding:2px 4px; }
+
+      /* Tiny chip used on expenses card */
+      .print-chip {
+        display:inline-block;
+        padding:2px 6px; 
+        border-radius:999px; 
+        border:.6px solid #c7c7c7; 
+        background:#fffdf5; 
+        font-weight:700;
+      }
+      .print-chip--danger { background:#fff0f0; border-color:#f1b0b0; color:#a31212; }
+
     }
   `}
       />
