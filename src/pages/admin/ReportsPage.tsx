@@ -743,7 +743,7 @@ export function ReportsPage() {
       error: expError,
     } = useExpensesList(startDateStr, endDateStr, {
       pageNumber: 1,
-      pageSize: 5,
+      pageSize: 100000,
     });
 
     if (isLoading) {
