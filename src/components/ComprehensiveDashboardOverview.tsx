@@ -6,7 +6,6 @@ import {
   IconPackage,
   IconTrendingUp,
   IconUsers,
-  IconTestPipe,
   IconCalendarEvent,
 } from "@tabler/icons-react";
 import { StatsCard } from "./StatsCard";
@@ -39,7 +38,6 @@ export function ComprehensiveDashboardOverview({
     );
   }
 
-  
   const getTrendData = (current: number) => {
     if (current === 0) return { value: "0.0%", isPositive: true };
     return {
@@ -48,7 +46,6 @@ export function ComprehensiveDashboardOverview({
     };
   };
 
-  
   const getPeriodText = () => {
     switch (period) {
       case "today":
@@ -74,7 +71,7 @@ export function ComprehensiveDashboardOverview({
         p="md"
         style={{ backgroundColor: "var(--mantine-color-blue-0)" }}
       >
-        <Group mb="md" align="center">
+        <Group align="center">
           <IconCalendarEvent size={18} color="var(--mantine-color-blue-6)" />
           <Text size="lg" fw={600} c="blue.7">
             {getPeriodText()}
@@ -83,10 +80,6 @@ export function ComprehensiveDashboardOverview({
             Date Filtered
           </Badge>
         </Group>
-
-        <Text size="sm" c="dimmed">
-          Key business metrics for your selected time period
-        </Text>
       </Paper>
 
       {}
@@ -178,21 +171,12 @@ export function ComprehensiveDashboardOverview({
           />
 
           <StatsCard
-            title="Tests Performed"
-            value={overview?.testsPerformed || 0}
-            icon={<IconTestPipe size={20} />}
-            color="cyan"
-            loading={isLoading}
-          />
-
-          <StatsCard
             title="Items per Transaction"
             value={
               overview && overview.transactionsCount > 0
-                ? (
-                    (overview.productsSold + overview.testsPerformed) /
-                    overview.transactionsCount
-                  ).toFixed(1)
+                ? (overview.productsSold / overview.transactionsCount).toFixed(
+                    1
+                  )
                 : "0"
             }
             icon={<IconPackage size={20} />}
@@ -204,72 +188,38 @@ export function ComprehensiveDashboardOverview({
       </Paper>
 
       {}
-      {overview &&
-        (overview.topProducts.length > 0 || overview.topTests.length > 0) && (
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-            {}
-            {overview.topProducts.length > 0 && (
-              <Paper withBorder p="md">
-                <Text fw={600} mb="md">
-                  Top Performing Products
-                </Text>
-                <Stack gap="xs">
-                  {overview.topProducts.slice(0, 3).map((product, index) => (
-                    <Group key={product.id} justify="space-between">
-                      <Group gap="xs">
-                        <Badge size="xs" variant="light" color="blue">
-                          #{index + 1}
-                        </Badge>
-                        <Text size="sm" fw={500}>
-                          {product.name}
-                        </Text>
-                      </Group>
-                      <Group gap="md">
-                        <Text size="xs" c="dimmed">
-                          {product.quantity} sold
-                        </Text>
-                        <Text size="sm" fw={600} c="green">
-                          {formatCurrency(product.revenue)}
-                        </Text>
-                      </Group>
-                    </Group>
-                  ))}
-                </Stack>
-              </Paper>
-            )}
-
-            {}
-            {overview.topTests.length > 0 && (
-              <Paper withBorder p="md">
-                <Text fw={600} mb="md">
-                  Top Performing Tests
-                </Text>
-                <Stack gap="xs">
-                  {overview.topTests.slice(0, 3).map((test, index) => (
-                    <Group key={test.id} justify="space-between">
-                      <Group gap="xs">
-                        <Badge size="xs" variant="light" color="cyan">
-                          #{index + 1}
-                        </Badge>
-                        <Text size="sm" fw={500}>
-                          {test.name}
-                        </Text>
-                      </Group>
-                      <Group gap="md">
-                        <Text size="xs" c="dimmed">
-                          {test.quantity} performed
-                        </Text>
-                        <Text size="sm" fw={600} c="green">
-                          {formatCurrency(test.revenue)}
-                        </Text>
-                      </Group>
-                    </Group>
-                  ))}
-                </Stack>
-              </Paper>
-            )}
-          </SimpleGrid>
-        )}
+      {overview && overview.topProducts.length > 0 && (
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          {}
+          <Paper withBorder p="md">
+            <Text fw={600} mb="md">
+              Top Performing Products
+            </Text>
+            <Stack gap="xs">
+              {overview.topProducts.slice(0, 3).map((product, index) => (
+                <Group key={product.id} justify="space-between">
+                  <Group gap="xs">
+                    <Badge size="xs" variant="light" color="blue">
+                      #{index + 1}
+                    </Badge>
+                    <Text size="sm" fw={500}>
+                      {product.name}
+                    </Text>
+                  </Group>
+                  <Group gap="md">
+                    <Text size="xs" c="dimmed">
+                      {product.quantity} sold
+                    </Text>
+                    <Text size="sm" fw={600} c="green">
+                      {formatCurrency(product.revenue)}
+                    </Text>
+                  </Group>
+                </Group>
+              ))}
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+      )}
     </Stack>
   );
 }

@@ -238,33 +238,6 @@ export function useTopSellingProducts(
   });
 }
 
-export function useTopPerformingTests(
-  startDate: string,
-  endDate: string,
-  limit: number = 10
-) {
-  return useQuery({
-    queryKey: [
-      ...reportKeys.transactions(),
-      "top-performing-tests",
-      { startDate, endDate, limit },
-    ],
-    queryFn: async (): Promise<TopItem[]> => {
-      const response =
-        await apiEndpoints.reports.transactions.topPerformingTests({
-          startDate,
-          endDate,
-          limit,
-        });
-      return response.data;
-    },
-    enabled: !!startDate && !!endDate,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-  });
-}
-
 export function usePaymentMethodBreakdown(startDate: string, endDate: string) {
   return useQuery({
     queryKey: reportKeys.transactionsPaymentBreakdown({ startDate, endDate }),
@@ -399,8 +372,10 @@ export function useEmployeeSales(startDate: string, endDate: string) {
 
       const employeeMap = new Map<string, any>();
       response.data.data.forEach((transaction: any) => {
-        const id: string = transaction.cashierId || transaction.processedBy || "unknown";
-        const name: string = transaction.cashierName || transaction.processedBy || "Unknown";
+        const id: string =
+          transaction.cashierId || transaction.processedBy || "unknown";
+        const name: string =
+          transaction.cashierName || transaction.processedBy || "Unknown";
 
         if (!employeeMap.has(id)) {
           employeeMap.set(id, {
