@@ -1492,19 +1492,7 @@ export const apiEndpoints = {
           `/reports/transactions/top-selling-products?${params.toString()}`
         );
       },
-      topPerformingTests: (filters: {
-        startDate: string;
-        endDate: string;
-        limit?: number;
-      }) => {
-        const params = new URLSearchParams();
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) params.append(key, String(value));
-        });
-        return api.get<TopItem[]>(
-          `/reports/transactions/top-performing-tests?${params.toString()}`
-        );
-      },
+
       paymentMethodBreakdown: (filters: {
         startDate: string;
         endDate: string;

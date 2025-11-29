@@ -10,7 +10,6 @@ import {
   Text,
   Table,
   Badge,
-  Progress,
   SimpleGrid,
   Loader,
   Alert,
@@ -19,6 +18,7 @@ import {
   RingProgress,
   Select,
   Accordion,
+  ScrollArea,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import {
@@ -26,7 +26,6 @@ import {
   IconTrendingUp,
   IconUsers,
   IconPackage,
-  IconTestPipe,
   IconCurrencyPeso,
   IconFileText,
   IconDownload,
@@ -37,7 +36,6 @@ import {
 import { Global } from "@emotion/react";
 import {
   useTopSellingProducts,
-  useTopPerformingTests,
   useEmployeeSales,
   useSalesSummary,
 } from "../../hooks/api/useReports";
@@ -58,7 +56,6 @@ export function ReportsPage() {
   const tabLabelMap: Record<string, string> = {
     overview: "Sales Overview",
     products: "Sales by Product",
-    tests: "Sales by Tests",
     employees: "Sales by Employee",
     expenses: "Expenses",
   };
@@ -83,7 +80,6 @@ export function ReportsPage() {
   const endDateStr = formatDateLocal(endDate);
 
   const productsQuery = useTopSellingProducts(startDateStr, endDateStr, 50);
-  const testsQuery = useTopPerformingTests(startDateStr, endDateStr, 50);
   const employeeQuery = useEmployeeSales(startDateStr, endDateStr);
 
   const expenseStatsQuery = useExpenseStatistics(startDateStr, endDateStr);
@@ -333,81 +329,61 @@ export function ReportsPage() {
       );
     }
 
-    const maxRevenue = Math.max(...products.map((p) => p.revenue));
-
     return (
       <Stack gap="md">
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Total Products Sold
-                </Text>
-                <Text fw={700} size="xl">
-                  {products.reduce((sum, p) => sum + p.quantity, 0)}
-                </Text>
-              </div>
-              <ThemeIcon color="blue" variant="light" size="xl">
-                <IconPackage size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="blue" variant="light" size="xl" mb="md">
+              <IconPackage size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Total Products Sold
+            </Text>
+            <Text fw={700} size="xl">
+              {products.reduce((sum, p) => sum + p.quantity, 0)}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Product Revenue
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(
-                    products.reduce((sum, p) => sum + p.revenue, 0)
-                  )}
-                </Text>
-              </div>
-              <ThemeIcon color="green" variant="light" size="xl">
-                <IconCurrencyPeso size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="green" variant="light" size="xl" mb="md">
+              <IconCurrencyPeso size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Product Revenue
+            </Text>
+            <Text fw={700} size="xl">
+              {formatCurrency(products.reduce((sum, p) => sum + p.revenue, 0))}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Average Revenue per Product
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(
-                    products.reduce((sum, p) => sum + p.revenue, 0) /
-                      products.length
-                  )}
-                </Text>
-              </div>
-              <ThemeIcon color="teal" variant="light" size="xl">
-                <IconTrendingUp size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="teal" variant="light" size="xl" mb="md">
+              <IconTrendingUp size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Avg. Revenue per Product
+            </Text>
+            <Text fw={700} size="xl">
+              {formatCurrency(
+                products.reduce((sum, p) => sum + p.revenue, 0) /
+                  products.length
+              )}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Top Selling Product
-                </Text>
-                <Text fw={700} size="lg">
-                  {products[0]?.name}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {products[0]?.quantity} units sold
-                </Text>
-              </div>
-              <ThemeIcon color="orange" variant="light" size="xl">
-                <IconChartPie size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="orange" variant="light" size="xl" mb="md">
+              <IconChartPie size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Top Selling Product
+            </Text>
+            <Text fw={700} size="lg">
+              {products[0]?.name}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {products[0]?.quantity} units sold
+            </Text>
           </Paper>
         </SimpleGrid>
 
@@ -419,14 +395,16 @@ export function ReportsPage() {
                 <Table.Th>Product Name</Table.Th>
                 <Table.Th>Quantity Sold</Table.Th>
                 <Table.Th>Revenue</Table.Th>
-                <Table.Th>Performance</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {products.map((product, index) => (
                 <Table.Tr key={product.id}>
                   <Table.Td>
-                    <Badge color={index < 3 ? "gold" : "gray"} variant="light">
+                    <Badge
+                      color={index < 3 ? "orange" : "gray"}
+                      variant="light"
+                    >
                       #{index + 1}
                     </Badge>
                   </Table.Td>
@@ -438,16 +416,6 @@ export function ReportsPage() {
                   </Table.Td>
                   <Table.Td>
                     <Text fw={500}>{formatCurrency(product.revenue)}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Progress
-                      value={(product.revenue / maxRevenue) * 100}
-                      size="sm"
-                      color={index < 3 ? "green" : "blue"}
-                    />
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {((product.revenue / maxRevenue) * 100).toFixed(1)}%
-                    </Text>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -485,77 +453,60 @@ export function ReportsPage() {
       );
     }
 
-    const maxSales = Math.max(...employees.map((e) => e.totalSales));
     const totalSales = employees.reduce((sum, e) => sum + e.totalSales, 0);
 
     return (
       <Stack gap="md">
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Active Employees
-                </Text>
-                <Text fw={700} size="xl">
-                  {employees.length}
-                </Text>
-              </div>
-              <ThemeIcon color="blue" variant="light" size="xl">
-                <IconUsers size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="blue" variant="light" size="xl" mb="md">
+              <IconUsers size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Active Employees
+            </Text>
+            <Text fw={700} size="xl">
+              {employees.length}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Total Employee Sales
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(totalSales)}
-                </Text>
-              </div>
-              <ThemeIcon color="green" variant="light" size="xl">
-                <IconCurrencyPeso size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="green" variant="light" size="xl" mb="md">
+              <IconCurrencyPeso size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Total Employee Sales
+            </Text>
+            <Text fw={700} size="xl">
+              {formatCurrency(totalSales)}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Average Sales per Employee
-                </Text>
-                <Text fw={700} size="xl">
-                  {formatCurrency(totalSales / employees.length)}
-                </Text>
-              </div>
-              <ThemeIcon color="teal" variant="light" size="xl">
-                <IconTrendingUp size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="teal" variant="light" size="xl" mb="md">
+              <IconTrendingUp size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Average Sales per Employee
+            </Text>
+            <Text fw={700} size="xl">
+              {formatCurrency(totalSales / employees.length)}
+            </Text>
           </Paper>
 
           <Paper p="md" withBorder>
-            <Group justify="apart">
-              <div>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Top Performer
-                </Text>
-                <Text fw={700} size="lg">
-                  {employees[0]?.employeeName}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {formatCurrency(employees[0]?.totalSales)}
-                </Text>
-              </div>
-              <ThemeIcon color="orange" variant="light" size="xl">
-                <IconChartPie size="1.8rem" />
-              </ThemeIcon>
-            </Group>
+            <ThemeIcon color="orange" variant="light" size="xl" mb="md">
+              <IconChartPie size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Top Performer
+            </Text>
+            <Text fw={700} size="lg">
+              {employees[0]?.employeeName}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {formatCurrency(employees[0]?.totalSales)}
+            </Text>
           </Paper>
         </SimpleGrid>
 
@@ -574,7 +525,7 @@ export function ReportsPage() {
                   <Group justify="space-between" align="center">
                     <Group align="center" gap="md">
                       <Badge
-                        color={index < 3 ? "gold" : "gray"}
+                        color={index < 3 ? "orange" : "gray"}
                         variant="light"
                         size="lg"
                       >
@@ -600,17 +551,6 @@ export function ReportsPage() {
                           {formatCurrency(employee.averageTransactionValue)}
                         </Text>
                       </div>
-                      <div style={{ minWidth: "100px" }}>
-                        <Progress
-                          value={(employee.totalSales / maxSales) * 100}
-                          size="md"
-                          color={index < 3 ? "orange" : "blue"}
-                        />
-                        <Text size="xs" c="dimmed" ta="center" mt={2}>
-                          {((employee.totalSales / maxSales) * 100).toFixed(1)}%
-                          of top
-                        </Text>
-                      </div>
                     </Group>
                   </Group>
                 </Accordion.Control>
@@ -626,92 +566,98 @@ export function ReportsPage() {
                     </Group>
 
                     {employee.transactions.length > 0 ? (
-                      <Table striped highlightOnHover>
-                        <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>Date & Time</Table.Th>
-                            <Table.Th>Receipt Number</Table.Th>
-                            <Table.Th>Items</Table.Th>
-                            <Table.Th>Payment Method</Table.Th>
-                            <Table.Th>Total Amount</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                          </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                          {employee.transactions
-                            .sort(
-                              (a: any, b: any) =>
-                                new Date(b.transactionDate).getTime() -
-                                new Date(a.transactionDate).getTime()
-                            )
-                            .map((transaction: any) => (
-                              <Table.Tr key={transaction.id}>
-                                <Table.Td>
-                                  <div>
-                                    <Text size="sm" fw={500}>
-                                      {new Date(
-                                        transaction.transactionDate
-                                      ).toLocaleDateString()}
+                      <ScrollArea.Autosize mah={500} type="auto">
+                        <Table striped highlightOnHover>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Date & Time</Table.Th>
+                              <Table.Th>Receipt Number</Table.Th>
+                              <Table.Th>Items</Table.Th>
+                              <Table.Th>Payment Method</Table.Th>
+                              <Table.Th>Total Amount</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {employee.transactions
+                              .sort(
+                                (a: any, b: any) =>
+                                  new Date(b.transactionDate).getTime() -
+                                  new Date(a.transactionDate).getTime()
+                              )
+                              .map((transaction: any) => (
+                                <Table.Tr key={transaction.id}>
+                                  <Table.Td>
+                                    <div>
+                                      <Text size="sm" fw={500}>
+                                        {new Date(
+                                          transaction.transactionDate
+                                        ).toLocaleDateString()}
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        {new Date(
+                                          transaction.transactionDate
+                                        ).toLocaleTimeString()}
+                                      </Text>
+                                    </div>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text size="xs" ff="monospace" c="dimmed">
+                                      {transaction.receiptNumber}
                                     </Text>
-                                    <Text size="xs" c="dimmed">
-                                      {new Date(
-                                        transaction.transactionDate
-                                      ).toLocaleTimeString()}
-                                    </Text>
-                                  </div>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="xs" ff="monospace" c="dimmed">
-                                    {transaction.receiptNumber}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Badge size="sm" variant="light" color="blue">
-                                    {transaction.itemCount} items
-                                  </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Badge
-                                    size="sm"
-                                    variant="outline"
-                                    color={
-                                      transaction.paymentMethod === "Cash"
-                                        ? "green"
-                                        : "blue"
-                                    }
-                                  >
-                                    {transaction.paymentMethod}
-                                  </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text fw={600} c="green">
-                                    {formatCurrency(transaction.totalAmount)}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  {transaction.isVoided ? (
+                                  </Table.Td>
+                                  <Table.Td>
                                     <Badge
                                       size="sm"
-                                      color="dark"
-                                      variant="filled"
-                                      style={{ backgroundColor: "#5f3dc4" }}
-                                    >
-                                      Voided
-                                    </Badge>
-                                  ) : (
-                                    <Badge
-                                      size="sm"
-                                      color="green"
                                       variant="light"
+                                      color="blue"
                                     >
-                                      Completed
+                                      {transaction.itemCount} items
                                     </Badge>
-                                  )}
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
-                        </Table.Tbody>
-                      </Table>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Badge
+                                      size="sm"
+                                      variant="outline"
+                                      color={
+                                        transaction.paymentMethod === "Cash"
+                                          ? "green"
+                                          : "blue"
+                                      }
+                                    >
+                                      {transaction.paymentMethod}
+                                    </Badge>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text fw={600} c="green">
+                                      {formatCurrency(transaction.totalAmount)}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    {transaction.isVoided ? (
+                                      <Badge
+                                        size="sm"
+                                        color="dark"
+                                        variant="filled"
+                                        style={{ backgroundColor: "#5f3dc4" }}
+                                      >
+                                        Voided
+                                      </Badge>
+                                    ) : (
+                                      <Badge
+                                        size="sm"
+                                        color="green"
+                                        variant="light"
+                                      >
+                                        Completed
+                                      </Badge>
+                                    )}
+                                  </Table.Td>
+                                </Table.Tr>
+                              ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea.Autosize>
                     ) : (
                       <Center py="md">
                         <Text c="dimmed" size="sm">

@@ -1,18 +1,11 @@
 import { useState, useCallback } from "react";
 import { Container, Tabs, Title, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import {
-  IconPackage,
-  IconTestPipe,
-  IconFlask,
-  IconTruck,
-} from "@tabler/icons-react";
+import { IconPackage, IconFlask, IconTruck } from "@tabler/icons-react";
 import { BulkAddProductModal } from "../../components/BulkAddProductModal";
 import { BulkAddReagentModal } from "../../components/BulkAddReagentModal";
 import { ReagentModal } from "../../components/ReagentModal";
-import { TestModal } from "../../components/TestModal";
 import { ProductsTab } from "../../components/inventory/ProductsTab";
-import { TestsTab } from "../../components/inventory/TestsTab";
 import { ReagentsTab } from "../../components/inventory/ReagentsTab";
 import { RestockingTab } from "../../components/inventory/RestockingTab";
 import { useProductsReferenceData } from "../../hooks/api/useProducts";
@@ -20,17 +13,13 @@ import { useProductsReferenceData } from "../../hooks/api/useProducts";
 export function InventoryPage() {
   const [activeTab, setActiveTab] = useState("products");
 
-  
   const [addProductModalOpened, setAddProductModalOpened] = useState(false);
   const [reagentModalOpened, setReagentModalOpened] = useState(false);
   const [bulkAddReagentModalOpened, setBulkAddReagentModalOpened] =
     useState(false);
-  const [addTestModalOpened, setAddTestModalOpened] = useState(false);
 
-  
   const referenceData = useProductsReferenceData();
 
-  
   const handleAddProduct = useCallback(() => {
     setAddProductModalOpened(true);
   }, []);
@@ -51,21 +40,7 @@ export function InventoryPage() {
     setBulkAddReagentModalOpened(true);
   }, []);
 
-  const handleReagentModalSuccess = useCallback(() => {
-    
-  }, []);
-
-  const handleAddTest = useCallback(() => {
-    setAddTestModalOpened(true);
-  }, []);
-
-  const handleTestModalSuccess = useCallback(() => {
-    notifications.show({
-      title: "Success",
-      message: "Test added successfully",
-      color: "green",
-    });
-  }, []);
+  const handleReagentModalSuccess = useCallback(() => {}, []);
 
   return (
     <Container
@@ -100,9 +75,6 @@ export function InventoryPage() {
           <Tabs.Tab value="products" leftSection={<IconPackage size={16} />}>
             Products
           </Tabs.Tab>
-          <Tabs.Tab value="tests" leftSection={<IconTestPipe size={16} />}>
-            Tests
-          </Tabs.Tab>
           <Tabs.Tab value="reagents" leftSection={<IconFlask size={16} />}>
             Reagents
           </Tabs.Tab>
@@ -121,18 +93,6 @@ export function InventoryPage() {
           }}
         >
           <ProductsTab onAddProduct={handleAddProduct} />
-        </Tabs.Panel>
-
-        <Tabs.Panel
-          value="tests"
-          pt="md"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <TestsTab onAddTest={handleAddTest} />
         </Tabs.Panel>
 
         <Tabs.Panel
@@ -183,12 +143,6 @@ export function InventoryPage() {
         opened={bulkAddReagentModalOpened}
         onClose={() => setBulkAddReagentModalOpened(false)}
         onSuccess={handleReagentModalSuccess}
-      />
-
-      <TestModal
-        opened={addTestModalOpened}
-        onClose={() => setAddTestModalOpened(false)}
-        onSuccess={handleTestModalSuccess}
       />
     </Container>
   );

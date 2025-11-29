@@ -6,7 +6,7 @@ export * from "./useReports";
 export * from "./useRoles";
 export * from "./useUsers";
 export * from "./useExpenses";
-export { useEmployeeSales, useTopPerformingTests } from "./useReports";
+export { useEmployeeSales } from "./useReports";
 
 export type {
   CatalogItem,
