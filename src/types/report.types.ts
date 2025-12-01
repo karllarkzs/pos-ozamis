@@ -11,16 +11,14 @@ export interface DashboardOverview {
   expiringProducts: number;
   inventoryValue: number;
   productsSold: number;
-  testsPerformed: number;
   restockBatches: number;
   topProducts: TopItem[];
-  topTests: TopItem[];
 }
 
 export interface TopItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   quantity: number;
   revenue: number;
   profit: number;
@@ -43,9 +41,7 @@ export interface FinancialReport {
   gcashSales: number;
   paymentMethodBreakdown: Record<string, number>;
   productRevenue: number;
-  testRevenue: number;
   productsSold: number;
-  testsPerformed: number;
   totalTransactions: number;
   voidedTransactions: number;
   averageTransactionValue: number;
@@ -63,7 +59,7 @@ export interface DailyBreakdown {
 export interface InventoryMovementItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product" | "Reagent";
   quantityMoved: number;
   revenue: number;
   movementCount: number;
@@ -74,7 +70,7 @@ export interface InventoryMovementItem {
 export interface InventoryAlert {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product" | "Reagent";
   currentStock: number;
   minimumStock: number;
   expirationDate?: string;
@@ -134,5 +130,3 @@ export interface SalesSummaryResponse {
   generatedAt: string;
   generatedBy?: string;
 }
-
-

@@ -20,9 +20,8 @@ export interface TransactionItemResponse {
   id: string;
   itemId: string;
   productId?: string | null;
-  testId?: string | null;
   itemName: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   barcode?: string | null;
   quantity: number;
   unitPrice: number;
@@ -132,5 +131,3 @@ export interface TransactionFilters {
     | "cashierName";
   sortDirection?: "asc" | "desc";
 }
-
-

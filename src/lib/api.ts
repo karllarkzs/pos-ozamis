@@ -311,13 +311,12 @@ export interface DashboardOverview {
   testsPerformed: number;
   restockBatches: number;
   topProducts: TopItem[];
-  topTests: TopItem[];
 }
 
 export interface TopItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   quantity: number;
   revenue: number;
   profit: number;
@@ -340,9 +339,7 @@ export interface FinancialReport {
   gcashSales: number;
   paymentMethodBreakdown: Record<string, number>;
   productRevenue: number;
-  testRevenue: number;
   productsSold: number;
-  testsPerformed: number;
   totalTransactions: number;
   voidedTransactions: number;
   averageTransactionValue: number;
@@ -360,7 +357,7 @@ export interface DailyBreakdown {
 export interface InventoryMovementItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   quantityMoved: number;
   revenue: number;
   movementCount: number;
@@ -371,7 +368,7 @@ export interface InventoryMovementItem {
 export interface InventoryAlert {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   currentStock: number;
   minimumStock: number;
   expirationDate?: string;
@@ -546,7 +543,6 @@ export interface CatalogResponse {
 }
 
 export interface CatalogFilters {
-  itemType?: "Product" | "Test" | null;
   search?: string;
   productType?: string;
   formulation?: string;
@@ -562,8 +558,7 @@ export interface CatalogFilters {
     | "price"
     | "quantity"
     | "category"
-    | "location"
-    | "itemtype";
+    | "location";
   sortDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
@@ -575,7 +570,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   maxStock: number;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   isDiscountable: boolean;
 }
 
@@ -601,9 +596,8 @@ export interface TransactionItemResponse {
   id: string;
   itemId: string;
   productId?: string | null;
-  testId?: string | null;
   itemName: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   barcode?: string | null;
   quantity: number;
   unitPrice: number;
@@ -930,90 +924,6 @@ export const apiEndpoints = {
     check: () => api.get<{ status: string; timestamp: string }>("/health"),
   },
 
-  tests: {
-    getAll: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/list${queryString ? `?${queryString}` : ""}`
-      );
-    },
-
-    getById: (id: string) =>
-      api.get<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}`
-      ),
-
-    create: (test: CreateTestRequest) =>
-      api.post<{ success: boolean; message: string; data: Test }>(
-        "/tests",
-        test
-      ),
-
-    update: (id: string, test: CreateTestRequest) =>
-      api.put<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}`,
-        test
-      ),
-
-    delete: (id: string) =>
-      api.delete<{ success: boolean; message: string }>(`/tests/${id}`),
-
-    canPerform: (id: string) =>
-      api.get<{
-        success: boolean;
-        message: string;
-        data: { testId: string; canPerform: boolean };
-      }>(`/tests/${id}/can-perform`),
-
-    perform: (id: string, data: PerformTestRequest) =>
-      api.post<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}/perform`,
-        data
-      ),
-
-    getSummary: () =>
-      api.get<{ success: boolean; message: string; data: TestSummary }>(
-        "/tests/summary"
-      ),
-
-    getCannotPerform: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/cannot-perform${queryString ? `?${queryString}` : ""}`
-      );
-    },
-
-    getWithReagents: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/with-reagents${queryString ? `?${queryString}` : ""}`
-      );
-    },
-  },
   catalog: {
     getAll: (filters?: CatalogFilters, config?: { signal?: AbortSignal }) => {
       const queryString = filters ? buildQueryString(filters) : "";

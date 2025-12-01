@@ -103,10 +103,9 @@ export function usePOSCatalog() {
     return useCatalog(defaultFilters);
   };
 
-  const searchItems = (searchTerm: string, itemType?: "Product" | "Test") => {
+  const searchItems = (searchTerm: string) => {
     const filters: CatalogFilters = {
       search: searchTerm,
-      itemType,
       pageSize: 20,
       sortBy: "name",
     };
@@ -114,34 +113,24 @@ export function usePOSCatalog() {
     return useCatalog(filters);
   };
 
-  const getProducts = (filters: Omit<CatalogFilters, "itemType"> = {}) => {
+  const getProducts = (filters: CatalogFilters = {}) => {
     return useCatalog({
       ...filters,
-      itemType: "Product",
     });
   };
 
-  const getTests = (filters: Omit<CatalogFilters, "itemType"> = {}) => {
-    return useCatalog({
-      ...filters,
-      itemType: "Test",
-    });
-  };
-
-  const getLowStockItems = (itemType?: "Product" | "Test") => {
+  const getLowStockItems = () => {
     return useCatalog({
       isLowStock: true,
-      itemType,
       sortBy: "quantity",
       sortDirection: "asc",
       pageSize: 100,
     });
   };
 
-  const getNoStockItems = (itemType?: "Product" | "Test") => {
+  const getNoStockItems = () => {
     return useCatalog({
       isNoStock: true,
-      itemType,
       sortBy: "name",
       sortDirection: "asc",
       pageSize: 100,
@@ -210,7 +199,6 @@ export function usePOSCatalog() {
     getCatalogItems,
     searchItems,
     getProducts,
-    getTests,
     getLowStockItems,
     getNoStockItems,
     getDiscountableItems,
@@ -230,7 +218,7 @@ export function convertCatalogItemToCartItem(
     price: item.price,
     quantity: quantity,
     maxStock: item.quantity,
-    itemType: item.itemType,
+    itemType: "Product",
     isDiscountable: item.isDiscountable,
   };
 }

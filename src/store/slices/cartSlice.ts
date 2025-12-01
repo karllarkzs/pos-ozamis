@@ -35,7 +35,7 @@ export interface AddToCartPayload {
   price: number;
   quantity: number;
   maxStock: number;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   isDiscountable: boolean;
 }
 
