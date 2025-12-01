@@ -36,11 +36,7 @@ function TopProductItem({ item, maxRevenue }: ProductItemProps) {
             <Text fw={500} size="sm" lineClamp={1}>
               {item.name}
             </Text>
-            <Badge
-              size="xs"
-              color={item.itemType === "Product" ? "blue" : "teal"}
-              variant="light"
-            >
+            <Badge size="xs" color="blue" variant="light">
               #{item.rank}
             </Badge>
           </Group>
@@ -62,12 +58,7 @@ function TopProductItem({ item, maxRevenue }: ProductItemProps) {
         </div>
       </Group>
 
-      <Progress
-        value={percentage}
-        size="xs"
-        color={item.itemType === "Product" ? "blue" : "teal"}
-        mt="sm"
-      />
+      <Progress value={percentage} size="xs" color="blue" mt="sm" />
     </Paper>
   );
 }
@@ -157,7 +148,6 @@ export function TopProductsWidget(props: TopProductsWidgetProps = {}) {
   const endDate = props.endDate || formatDateLocal(new Date());
   const { topProducts, fastestMoving } = useRecentPerformance();
 
-  
   const dateRange = { startDate, endDate };
 
   const isLoading = topProducts.isLoading || fastestMoving.isLoading;

@@ -80,17 +80,10 @@ export function POSPage() {
   const [formulation, setFormulation] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
-  const [itemTypeFilter, setItemTypeFilter] = useState<string>("All");
   const [stockFilter, setStockFilter] = useState<string>("All");
   const [isPhilHealthOnly, setIsPhilHealthOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<
-    | "name"
-    | "formulation"
-    | "price"
-    | "quantity"
-    | "category"
-    | "location"
-    | "itemtype"
+    "name" | "formulation" | "price" | "quantity" | "category" | "location"
   >("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -199,12 +192,6 @@ export function POSPage() {
   const catalogFilters = useMemo(
     () => ({
       search: debouncedSearchQuery || undefined,
-      itemType:
-        itemTypeFilter === "Products"
-          ? ("Product" as const)
-          : itemTypeFilter === "Tests"
-          ? ("Test" as const)
-          : undefined,
       productType: productType || undefined,
       formulation: formulation || undefined,
       category: category || undefined,
@@ -222,7 +209,6 @@ export function POSPage() {
       formulation,
       category,
       location,
-      itemTypeFilter,
       stockFilter,
       isPhilHealthOnly,
       sortBy,
@@ -322,7 +308,7 @@ export function POSPage() {
           );
           return {
             ...cartItem,
-            itemType: catalogItem?.itemType || "Product",
+            itemType: "Product" as const,
             isDiscountable: catalogItem?.isDiscountable || true,
           };
         });
@@ -709,10 +695,6 @@ export function POSPage() {
     setLocation(value);
   }, []);
 
-  const handleItemTypeFilterChange = useCallback((value: string | null) => {
-    setItemTypeFilter(value || "All");
-  }, []);
-
   const handleStockFilterChange = useCallback((value: string | null) => {
     setStockFilter(value || "All");
   }, []);
@@ -726,7 +708,6 @@ export function POSPage() {
         "quantity",
         "category",
         "location",
-        "itemtype",
       ] as const;
       if (validSortKeys.includes(newSortBy as any)) {
         setSortBy(newSortBy as (typeof validSortKeys)[number]);
@@ -1038,20 +1019,6 @@ export function POSPage() {
             </Combobox>
           </div>
 
-          <div style={{ flex: "0 0 120px" }}>
-            <Select
-              placeholder="Show Items"
-              value={itemTypeFilter}
-              onChange={handleItemTypeFilterChange}
-              data={[
-                { value: "All", label: "All Items" },
-                { value: "Products", label: "Products Only" },
-                { value: "Tests", label: "Tests Only" },
-              ]}
-              clearable={false}
-            />
-          </div>
-
           <div style={{ flex: "0 0 auto" }}>
             <Button
               variant="light"
@@ -1071,7 +1038,6 @@ export function POSPage() {
       formulation,
       category,
       location,
-      itemTypeFilter,
       stockFilter,
       referenceData,
       handleSearchChange,
@@ -1079,7 +1045,6 @@ export function POSPage() {
       handleFormulationChange,
       handleCategoryChange,
       handleLocationChange,
-      handleItemTypeFilterChange,
       handleStockFilterChange,
     ]
   );

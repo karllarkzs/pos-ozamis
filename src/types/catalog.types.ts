@@ -1,6 +1,5 @@
 export interface CatalogItem {
   id: string;
-  itemType: "Product" | "Test";
   name: string;
   price: number;
   formulation: string | null;
@@ -26,7 +25,6 @@ export interface CatalogResponse {
 }
 
 export interface CatalogFilters {
-  itemType?: "Product" | "Test" | null;
   search?: string;
   productType?: string;
   formulation?: string;
@@ -42,11 +40,8 @@ export interface CatalogFilters {
     | "price"
     | "quantity"
     | "category"
-    | "location"
-    | "itemtype";
+    | "location";
   sortDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
-
-
