@@ -31,13 +31,14 @@ import {
   IconDownload,
   IconChartPie,
   IconClipboardText,
+  IconBarcode,
   IconReceipt,
 } from "@tabler/icons-react";
 import { Global } from "@emotion/react";
 import {
-  useTopSellingProducts,
   useEmployeeSales,
   useSalesSummary,
+  useProductSalesReport,
 } from "../../hooks/api/useReports";
 import { formatCurrency } from "../../utils/currency";
 import { useReactToPrint } from "react-to-print";
@@ -79,7 +80,7 @@ export function ReportsPage() {
   const startDateStr = formatDateLocal(startDate);
   const endDateStr = formatDateLocal(endDate);
 
-  const productsQuery = useTopSellingProducts(startDateStr, endDateStr, 50);
+  const productsQuery = useProductSalesReport(selectedPeriod, startDateStr, endDateStr);
   const employeeQuery = useEmployeeSales(startDateStr, endDateStr);
 
   const expenseStatsQuery = useExpenseStatistics(startDateStr, endDateStr);
@@ -303,7 +304,7 @@ export function ReportsPage() {
   });
 
   const ProductsTab = () => {
-    const { data: products, isLoading, error } = productsQuery;
+    const { data: report, isLoading, error } = productsQuery;
 
     if (isLoading) {
       return (
@@ -321,7 +322,7 @@ export function ReportsPage() {
       );
     }
 
-    if (!products || products.length === 0) {
+    if (!report || report.products.length === 0) {
       return (
         <Alert color="blue" title="No Data">
           No product sales found for the selected date range.
@@ -329,18 +330,32 @@ export function ReportsPage() {
       );
     }
 
+    const { products, summary } = report;
+
     return (
       <Stack gap="md">
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="md">
           <Paper p="md" withBorder>
             <ThemeIcon color="blue" variant="light" size="xl" mb="md">
               <IconPackage size="1.8rem" />
             </ThemeIcon>
             <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
-              Total Products Sold
+              Total Products
             </Text>
             <Text fw={700} size="xl">
-              {products.reduce((sum, p) => sum + p.quantity, 0)}
+              {summary.totalProducts}
+            </Text>
+          </Paper>
+
+          <Paper p="md" withBorder>
+            <ThemeIcon color="indigo" variant="light" size="xl" mb="md">
+              <IconBarcode size="1.8rem" />
+            </ThemeIcon>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
+              Units Sold
+            </Text>
+            <Text fw={700} size="xl">
+              {summary.totalUnits.toLocaleString()}
             </Text>
           </Paper>
 
@@ -349,10 +364,10 @@ export function ReportsPage() {
               <IconCurrencyPeso size="1.8rem" />
             </ThemeIcon>
             <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
-              Product Revenue
+              Total Revenue
             </Text>
             <Text fw={700} size="xl">
-              {formatCurrency(products.reduce((sum, p) => sum + p.revenue, 0))}
+              {formatCurrency(summary.totalRevenue)}
             </Text>
           </Paper>
 
@@ -361,13 +376,10 @@ export function ReportsPage() {
               <IconTrendingUp size="1.8rem" />
             </ThemeIcon>
             <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
-              Avg. Revenue per Product
+              Gross Profit
             </Text>
             <Text fw={700} size="xl">
-              {formatCurrency(
-                products.reduce((sum, p) => sum + p.revenue, 0) /
-                  products.length
-              )}
+              {formatCurrency(summary.totalRevenue - summary.totalCost)}
             </Text>
           </Paper>
 
@@ -376,13 +388,10 @@ export function ReportsPage() {
               <IconChartPie size="1.8rem" />
             </ThemeIcon>
             <Text size="xs" tt="uppercase" fw={700} c="dimmed" mb={4}>
-              Top Selling Product
+              Overall Margin
             </Text>
-            <Text fw={700} size="lg">
-              {products[0]?.name}
-            </Text>
-            <Text size="sm" c="dimmed">
-              {products[0]?.quantity} units sold
+            <Text fw={700} size="xl">
+              {summary.overallMargin.toFixed(1)}%
             </Text>
           </Paper>
         </SimpleGrid>
@@ -392,14 +401,20 @@ export function ReportsPage() {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Rank</Table.Th>
-                <Table.Th>Product Name</Table.Th>
-                <Table.Th>Quantity Sold</Table.Th>
-                <Table.Th>Revenue</Table.Th>
+                <Table.Th>Product</Table.Th>
+                <Table.Th>Category</Table.Th>
+                <Table.Th ta="right">Units Sold</Table.Th>
+                <Table.Th ta="right">Revenue</Table.Th>
+                <Table.Th ta="right">Cost</Table.Th>
+                <Table.Th ta="right">Gross Profit</Table.Th>
+                <Table.Th ta="right">Margin</Table.Th>
+                <Table.Th ta="right">Rev. Share</Table.Th>
+                <Table.Th ta="right">Discounts</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {products.map((product, index) => (
-                <Table.Tr key={product.id}>
+                <Table.Tr key={product.productId}>
                   <Table.Td>
                     <Badge
                       color={index < 3 ? "orange" : "gray"}
@@ -410,12 +425,59 @@ export function ReportsPage() {
                   </Table.Td>
                   <Table.Td>
                     <Text fw={500}>{product.name}</Text>
+                    {product.brand && (
+                      <Text size="xs" c="dimmed">{product.brand}</Text>
+                    )}
                   </Table.Td>
                   <Table.Td>
-                    <Text fw={500}>{product.quantity} units</Text>
+                    {product.category ? (
+                      <Badge size="sm" variant="light" color="blue">
+                        {product.category}
+                      </Badge>
+                    ) : (
+                      <Text size="xs" c="dimmed">—</Text>
+                    )}
                   </Table.Td>
-                  <Table.Td>
-                    <Text fw={500}>{formatCurrency(product.revenue)}</Text>
+                  <Table.Td ta="right">
+                    <Text fw={500}>{product.unitsSold.toLocaleString()}</Text>
+                    <Text size="xs" c="dimmed">{product.unitShare.toFixed(1)}% of units</Text>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Text fw={600}>{formatCurrency(product.revenue)}</Text>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Text c="dimmed">{formatCurrency(product.totalCost)}</Text>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Text fw={600} c={product.grossProfit >= 0 ? "teal" : "red"}>
+                      {formatCurrency(product.grossProfit)}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Badge
+                      color={
+                        product.grossProfitMargin >= 30
+                          ? "teal"
+                          : product.grossProfitMargin >= 10
+                          ? "yellow"
+                          : "red"
+                      }
+                      variant="light"
+                    >
+                      {product.grossProfitMargin.toFixed(1)}%
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Text size="sm">{product.revenueShare.toFixed(1)}%</Text>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    {product.totalDiscounts > 0 ? (
+                      <Text size="sm" c="red">
+                        {formatCurrency(product.totalDiscounts)}
+                      </Text>
+                    ) : (
+                      <Text size="xs" c="dimmed">—</Text>
+                    )}
                   </Table.Td>
                 </Table.Tr>
               ))}

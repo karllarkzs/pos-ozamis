@@ -10,6 +10,7 @@ import {
   DailyBreakdown,
   ReportFilters,
   SalesSummary,
+  ProductSalesReport,
 } from "../../lib/api";
 
 export const reportKeys = {
@@ -51,6 +52,8 @@ export const reportKeys = {
   business: () => [...reportKeys.all, "business"] as const,
   businessSalesSummary: (filters: any) =>
     [...reportKeys.business(), "sales-summary", filters] as const,
+  businessProductSales: (filters: any) =>
+    [...reportKeys.business(), "product-sales", filters] as const,
 
   employees: () => [...reportKeys.all, "employees"] as const,
   employeeSales: (filters: any) =>
@@ -433,6 +436,34 @@ export function useSalesSummary(
         endDate: isCustom ? endDate : undefined,
       });
       return resp.data.data; // unwrap to the core payload
+    },
+    enabled: isCustom ? !!startDate && !!endDate : !!selectedPeriod,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useProductSalesReport(
+  selectedPeriod: string,
+  startDate?: string,
+  endDate?: string
+) {
+  const isCustom = selectedPeriod === "custom";
+
+  return useQuery({
+    queryKey: reportKeys.businessProductSales({
+      period: selectedPeriod,
+      startDate: isCustom ? startDate : undefined,
+      endDate: isCustom ? endDate : undefined,
+    }),
+    queryFn: async (): Promise<ProductSalesReport> => {
+      const resp = await apiEndpoints.businessReports.productSales({
+        period: isCustom ? undefined : selectedPeriod,
+        startDate: isCustom ? startDate : undefined,
+        endDate: isCustom ? endDate : undefined,
+      });
+      return resp.data.data;
     },
     enabled: isCustom ? !!startDate && !!endDate : !!selectedPeriod,
     staleTime: 0,

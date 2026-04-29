@@ -760,6 +760,46 @@ export interface SalesSummaryResponse {
   generatedBy?: string;
 }
 
+export interface ProductSalesItem {
+  productId: string;
+  name: string;
+  barcode: string | null;
+  category: string | null;
+  brand: string | null;
+  unitsSold: number;
+  revenue: number;
+  averageSellingPrice: number;
+  totalCost: number;
+  grossProfit: number;
+  grossProfitMargin: number;
+  revenueShare: number;
+  unitShare: number;
+  totalDiscounts: number;
+  discountRate: number;
+}
+
+export interface ProductSalesSummary {
+  totalProducts: number;
+  totalUnits: number;
+  totalRevenue: number;
+  totalCost: number;
+  overallMargin: number;
+}
+
+export interface ProductSalesReport {
+  startDate: string;
+  endDate: string;
+  products: ProductSalesItem[];
+  summary: ProductSalesSummary;
+}
+
+export interface ProductSalesReportResponse {
+  data: ProductSalesReport;
+  filters: { period?: number; startDate?: string | null; endDate?: string | null };
+  generatedAt: string;
+  generatedBy?: string;
+}
+
 const buildQueryString = (filters: CatalogFilters): string => {
   const params = new URLSearchParams();
 
@@ -1298,6 +1338,20 @@ export const apiEndpoints = {
       const qs = params.toString();
       return api.get<SalesSummaryResponse>(
         `/business-reports/sales-summary${qs ? `?${qs}` : ""}`,
+      );
+    },
+    productSales: (filters?: {
+      period?: string;
+      startDate?: string;
+      endDate?: string;
+    }) => {
+      const params = new URLSearchParams();
+      if (filters?.period) params.append("period", filters.period);
+      if (filters?.startDate) params.append("startDate", filters.startDate);
+      if (filters?.endDate) params.append("endDate", filters.endDate);
+      const qs = params.toString();
+      return api.get<ProductSalesReportResponse>(
+        `/business-reports/product-sales${qs ? `?${qs}` : ""}`,
       );
     },
   },

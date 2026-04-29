@@ -130,9 +130,7 @@ export function useCreateRestockBatch() {
 
       
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["reagents"] });
       queryClient.invalidateQueries({ queryKey: ["productSummary"] });
-      queryClient.invalidateQueries({ queryKey: ["reagentSummary"] });
 
       
       queryClient.setQueryData(restockBatchKeys.detail(data.id), data);
