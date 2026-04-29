@@ -33,8 +33,8 @@ export function useRestockBatches(filters?: RestockBatchFilters) {
       const response = await apiEndpoints.restockBatches.getAll(filters);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, 
-    refetchInterval: 5 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 
@@ -46,7 +46,7 @@ export function useRestockBatch(id: string) {
       return response.data.data;
     },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -60,13 +60,13 @@ export function useRestockBatchSummary(filters?: {
       const response = await apiEndpoints.restockBatches.getSummary(filters);
       return response.data.data;
     },
-    staleTime: 5 * 60 * 1000, 
-    refetchInterval: 10 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
   });
 }
 
 export function useRecentRestockBatches(
-  params?: { days?: number } & RestockBatchFilters
+  params?: { days?: number } & RestockBatchFilters,
 ) {
   return useQuery({
     queryKey: restockBatchKeys.recent(params || {}),
@@ -74,8 +74,8 @@ export function useRecentRestockBatches(
       const response = await apiEndpoints.restockBatches.getRecent(params);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, 
-    refetchInterval: 5 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 
@@ -86,7 +86,7 @@ export function useTopRestockBatches(limit: number = 10) {
       const response = await apiEndpoints.restockBatches.getTopByValue(limit);
       return response.data.data;
     },
-    staleTime: 10 * 60 * 1000, 
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -97,7 +97,7 @@ export function useRestockBatchCompanies() {
       const response = await apiEndpoints.restockBatches.getCompanies();
       return response.data;
     },
-    staleTime: 30 * 60 * 1000, 
+    staleTime: 30 * 60 * 1000,
   });
 }
 
@@ -108,7 +108,7 @@ export function useRestockBatchReceivedByUsers() {
       const response = await apiEndpoints.restockBatches.getReceivedByUsers();
       return response.data;
     },
-    staleTime: 30 * 60 * 1000, 
+    staleTime: 30 * 60 * 1000,
   });
 }
 
@@ -117,22 +117,19 @@ export function useCreateRestockBatch() {
 
   return useMutation({
     mutationFn: async (
-      batch: CreateRestockBatchRequest
+      batch: CreateRestockBatchRequest,
     ): Promise<RestockBatch> => {
       const response = await apiEndpoints.restockBatches.create(batch);
       return response.data.data;
     },
     onSuccess: (data) => {
-      
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.lists() });
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.summary() });
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.recent({}) });
 
-      
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["productSummary"] });
 
-      
       queryClient.setQueryData(restockBatchKeys.detail(data.id), data);
     },
     onError: (error) => {
@@ -156,10 +153,8 @@ export function useUpdateRestockBatch() {
       return response.data.data;
     },
     onSuccess: (data) => {
-      
       queryClient.setQueryData(restockBatchKeys.detail(data.id), data);
 
-      
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.lists() });
     },
     onError: (error) => {
@@ -176,10 +171,8 @@ export function useDeleteRestockBatch() {
       await apiEndpoints.restockBatches.delete(id);
     },
     onSuccess: (_, id) => {
-      
       queryClient.removeQueries({ queryKey: restockBatchKeys.detail(id) });
 
-      
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.lists() });
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.summary() });
       queryClient.invalidateQueries({ queryKey: restockBatchKeys.recent({}) });
@@ -189,4 +182,3 @@ export function useDeleteRestockBatch() {
     },
   });
 }
-

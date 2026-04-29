@@ -795,7 +795,11 @@ export interface ProductSalesReport {
 
 export interface ProductSalesReportResponse {
   data: ProductSalesReport;
-  filters: { period?: number; startDate?: string | null; endDate?: string | null };
+  filters: {
+    period?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+  };
   generatedAt: string;
   generatedBy?: string;
 }

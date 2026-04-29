@@ -68,7 +68,7 @@ export function useDashboardOverview(
     | "yesterday"
     | "thisWeek"
     | "thisMonth"
-    | "thisYear" = "today"
+    | "thisYear" = "today",
 ) {
   return useQuery({
     queryKey: reportKeys.dashboardOverview({ period }),
@@ -105,7 +105,7 @@ export function useDashboardOverviewCustom(startDate: string, endDate: string) {
 export function useFinancialReport(
   startDate: string,
   endDate: string,
-  groupBy?: "daily" | "weekly" | "monthly"
+  groupBy?: "daily" | "weekly" | "monthly",
 ) {
   return useQuery({
     queryKey: reportKeys.financialReport({ startDate, endDate, groupBy }),
@@ -144,7 +144,7 @@ export function useMonthlyFinancialReport(year: number, month: number) {
     queryFn: async (): Promise<FinancialReport> => {
       const response = await apiEndpoints.reports.financial.monthly(
         year,
-        month
+        month,
       );
       return response.data;
     },
@@ -198,7 +198,7 @@ export function useInventoryAlerts() {
 export function useFastestMovingProducts(
   startDate: string,
   endDate: string,
-  limit: number = 10
+  limit: number = 10,
 ) {
   return useQuery({
     queryKey: reportKeys.inventoryFastestMoving({ startDate, endDate, limit }),
@@ -221,7 +221,7 @@ export function useFastestMovingProducts(
 export function useTopSellingProducts(
   startDate: string,
   endDate: string,
-  limit: number = 10
+  limit: number = 10,
 ) {
   return useQuery({
     queryKey: reportKeys.transactionsTopSelling({ startDate, endDate, limit }),
@@ -419,7 +419,7 @@ export function useEmployeeSales(startDate: string, endDate: string) {
 export function useSalesSummary(
   selectedPeriod: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
 ) {
   const isCustom = selectedPeriod === "custom";
 
@@ -447,7 +447,7 @@ export function useSalesSummary(
 export function useProductSalesReport(
   selectedPeriod: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
 ) {
   const isCustom = selectedPeriod === "custom";
 

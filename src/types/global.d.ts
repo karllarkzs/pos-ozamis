@@ -9,7 +9,7 @@ export interface DesktopAPI {
     testPrintReceipt: (printerName: string) => Promise<string>;
     printEscposReceipt: (
       printerName: string,
-      escposData: number[]
+      escposData: number[],
     ) => Promise<string>;
     printReceipt: (data: any) => Promise<string>;
   };

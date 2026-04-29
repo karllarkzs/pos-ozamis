@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import {
   Paper,
   Stack,
@@ -30,6 +30,7 @@ import {
   useInfiniteTransactions,
   useTransaction,
 } from "../../hooks/api/useTransactions";
+import { useSalesSummary } from "../../hooks/api/useReports";
 import { formatCurrency } from "../../utils/currency";
 
 /* utils */
@@ -37,22 +38,32 @@ const pmColor = (pm: string) =>
   pm === "Cash"
     ? "green"
     : pm === "GCash"
-    ? "blue"
-    : pm === "Maya"
-    ? "indigo"
-    : pm === "GoTyme"
-    ? "violet"
-    : "gray";
+      ? "blue"
+      : pm === "Maya"
+        ? "indigo"
+        : pm === "GoTyme"
+          ? "violet"
+          : "gray";
 
 export function TransactionsTab({
   startDateStr,
   endDateStr,
+  selectedPeriod,
 }: {
   startDateStr?: string;
   endDateStr?: string;
+  selectedPeriod?: string;
 }) {
   const [subtab, setSubtab] = useState<"all" | "discounted" | "voided">("all");
   const [openedId, setOpenedId] = useState<string | null>(null);
+
+  const period = selectedPeriod ?? "custom";
+
+  const { data: salesSummary, isLoading: summaryLoading } = useSalesSummary(
+    period,
+    startDateStr,
+    endDateStr,
+  );
 
   const {
     data,
@@ -73,7 +84,7 @@ export function TransactionsTab({
 
   const rows = useMemo(
     () => (data?.pages ?? []).flatMap((p) => p.data),
-    [data]
+    [data],
   );
 
   const filtered = useMemo(() => {
@@ -85,7 +96,7 @@ export function TransactionsTab({
           (t) =>
             (t.discountAmount ?? 0) > 0 ||
             (t.regularDiscount ?? 0) > 0 ||
-            (t.specialDiscount ?? 0) > 0
+            (t.specialDiscount ?? 0) > 0,
         );
       default:
         // ALL = include everything (voided + non-voided)
@@ -93,18 +104,33 @@ export function TransactionsTab({
     }
   }, [rows, subtab]);
 
-  // summary for current view
+  // summary for current view — use server-side totals from sales-summary when on "all" tab
   const summary = useMemo(() => {
+    if (subtab === "all" && salesSummary) {
+      return {
+        count: salesSummary.totalTransactions,
+        total: salesSummary.netSales,
+        discounted: salesSummary.discountedTransactions,
+        voided: salesSummary.voidedTransactions,
+        fromServer: true,
+      };
+    }
     const total = filtered.reduce((s, t) => s + (t.totalAmount ?? 0), 0);
     const discounted = filtered.filter(
       (t) =>
         (t.discountAmount ?? 0) > 0 ||
         (t.regularDiscount ?? 0) > 0 ||
-        (t.specialDiscount ?? 0) > 0
+        (t.specialDiscount ?? 0) > 0,
     ).length;
     const voided = filtered.filter((t) => t.isVoided).length;
-    return { count: filtered.length, total, discounted, voided };
-  }, [filtered]);
+    return {
+      count: filtered.length,
+      total,
+      discounted,
+      voided,
+      fromServer: false,
+    };
+  }, [filtered, subtab, salesSummary]);
 
   if (isLoading)
     return (
@@ -142,7 +168,10 @@ export function TransactionsTab({
         </Tabs.List>
 
         {/* shared summary header */}
-        <SummaryBar summary={summary} />
+        <SummaryBar
+          summary={summary}
+          isLoading={summaryLoading && subtab === "all"}
+        />
 
         <Tabs.Panel value="all" pt="sm">
           <Paper withBorder>
@@ -200,48 +229,54 @@ export function TransactionsTab({
 
 function SummaryBar({
   summary,
+  isLoading,
 }: {
-  summary: { count: number; total: number; discounted: number; voided: number };
+  summary: {
+    count: number;
+    total: number;
+    discounted: number;
+    voided: number;
+    fromServer?: boolean;
+  };
+  isLoading?: boolean;
 }) {
+  const chip = (value: ReactNode, label: string, color: string) => (
+    <Group gap={6}>
+      {isLoading ? (
+        <Skeleton height={22} width={36} radius="xl" />
+      ) : (
+        <Badge variant="light" color={color}>
+          {value}
+        </Badge>
+      )}
+      <Text size="sm" c="dimmed">
+        {label}
+      </Text>
+    </Group>
+  );
+
   return (
     <Paper withBorder p="xs" mt="sm">
       <Group gap="md" wrap="wrap">
-        <Group gap={6}>
-          <Badge variant="light" color="gray">
-            {summary.count.toLocaleString()}
-          </Badge>
-          <Text size="sm" c="dimmed">
-            records
-          </Text>
-        </Group>
+        {chip(summary.count.toLocaleString(), "records", "gray")}
         <Divider orientation="vertical" />
         <Group gap={6}>
           <IconCurrencyPeso size={14} />
-          <Text size="sm" fw={700}>
-            {formatCurrency(summary.total)}
-          </Text>
+          {isLoading ? (
+            <Skeleton height={18} width={80} radius="sm" />
+          ) : (
+            <Text size="sm" fw={700}>
+              {formatCurrency(summary.total)}
+            </Text>
+          )}
           <Text size="sm" c="dimmed">
             total
           </Text>
         </Group>
         <Divider orientation="vertical" />
-        <Group gap={6}>
-          <Badge variant="light" color="violet">
-            {summary.discounted}
-          </Badge>
-          <Text size="sm" c="dimmed">
-            discounted
-          </Text>
-        </Group>
+        {chip(summary.discounted, "discounted", "violet")}
         <Divider orientation="vertical" />
-        <Group gap={6}>
-          <Badge variant="light" color="red">
-            {summary.voided}
-          </Badge>
-          <Text size="sm" c="dimmed">
-            voided
-          </Text>
-        </Group>
+        {chip(summary.voided, "voided", "red")}
       </Group>
     </Paper>
   );
@@ -384,9 +419,9 @@ function TransactionsTable({
                     <Tooltip
                       withArrow
                       label={`Regular: ${formatCurrency(
-                        t.regularDiscount ?? 0
+                        t.regularDiscount ?? 0,
                       )} • Special: ${formatCurrency(
-                        t.specialDiscount ?? 0
+                        t.specialDiscount ?? 0,
                       )} • Total: ${formatCurrency(t.discountAmount ?? 0)}`}
                     >
                       <Badge
@@ -580,7 +615,7 @@ function TransactionDetailsModal({
                           {it.batchNumber ? ` • Batch: ${it.batchNumber}` : ""}
                           {it.expirationDate
                             ? ` • Exp: ${new Date(
-                                it.expirationDate
+                                it.expirationDate,
                               ).toLocaleDateString()}`
                             : ""}
                         </Text>

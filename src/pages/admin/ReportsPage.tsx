@@ -60,7 +60,7 @@ export function ReportsPage() {
     employees: "Sales by Employee",
     expenses: "Expenses",
   };
-  const activeTabLabel = activeTab ? tabLabelMap[activeTab] ?? activeTab : "";
+  const activeTabLabel = activeTab ? (tabLabelMap[activeTab] ?? activeTab) : "";
 
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
@@ -80,19 +80,23 @@ export function ReportsPage() {
   const startDateStr = formatDateLocal(startDate);
   const endDateStr = formatDateLocal(endDate);
 
-  const productsQuery = useProductSalesReport(selectedPeriod, startDateStr, endDateStr);
+  const productsQuery = useProductSalesReport(
+    selectedPeriod,
+    startDateStr,
+    endDateStr,
+  );
   const employeeQuery = useEmployeeSales(startDateStr, endDateStr);
 
   const expenseStatsQuery = useExpenseStatistics(startDateStr, endDateStr);
   const expensesByCategoryQuery = useExpensesByCategory(
     startDateStr,
-    endDateStr
+    endDateStr,
   );
   const expenseCategoriesQuery = useExpenseCategories();
 
   const detectPeriodFromDates = (
     start: Date | null,
-    end: Date | null
+    end: Date | null,
   ): string => {
     if (!start || !end) return "custom";
 
@@ -101,7 +105,7 @@ export function ReportsPage() {
     const startDate = new Date(
       start.getFullYear(),
       start.getMonth(),
-      start.getDate()
+      start.getDate(),
     );
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
@@ -118,7 +122,7 @@ export function ReportsPage() {
     const startOfWeekDate = new Date(
       startOfWeek.getFullYear(),
       startOfWeek.getMonth(),
-      startOfWeek.getDate()
+      startOfWeek.getDate(),
     );
 
     if (
@@ -133,14 +137,14 @@ export function ReportsPage() {
     const prevWeekEndDate = new Date(
       prevWeekEnd.getFullYear(),
       prevWeekEnd.getMonth(),
-      prevWeekEnd.getDate()
+      prevWeekEnd.getDate(),
     );
     const prevWeekStart = new Date(prevWeekEnd);
     prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
     const prevWeekStartDate = new Date(
       prevWeekStart.getFullYear(),
       prevWeekStart.getMonth(),
-      prevWeekStart.getDate()
+      prevWeekStart.getDate(),
     );
 
     if (
@@ -163,12 +167,12 @@ export function ReportsPage() {
     const prevMonthStartDate = new Date(
       prevMonthStart.getFullYear(),
       prevMonthStart.getMonth(),
-      prevMonthStart.getDate()
+      prevMonthStart.getDate(),
     );
     const prevMonthEndDate = new Date(
       prevMonthEnd.getFullYear(),
       prevMonthEnd.getMonth(),
-      prevMonthEnd.getDate()
+      prevMonthEnd.getDate(),
     );
 
     if (
@@ -191,12 +195,12 @@ export function ReportsPage() {
     const prevYearStartDate = new Date(
       prevYearStart.getFullYear(),
       prevYearStart.getMonth(),
-      prevYearStart.getDate()
+      prevYearStart.getDate(),
     );
     const prevYearEndDate = new Date(
       prevYearEnd.getFullYear(),
       prevYearEnd.getMonth(),
-      prevYearEnd.getDate()
+      prevYearEnd.getDate(),
     );
 
     if (
@@ -250,7 +254,7 @@ export function ReportsPage() {
         const prevMonthStart = new Date(
           now.getFullYear(),
           now.getMonth() - 1,
-          1
+          1,
         );
         const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
         setStartDate(prevMonthStart);
@@ -426,7 +430,9 @@ export function ReportsPage() {
                   <Table.Td>
                     <Text fw={500}>{product.name}</Text>
                     {product.brand && (
-                      <Text size="xs" c="dimmed">{product.brand}</Text>
+                      <Text size="xs" c="dimmed">
+                        {product.brand}
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td>
@@ -435,12 +441,16 @@ export function ReportsPage() {
                         {product.category}
                       </Badge>
                     ) : (
-                      <Text size="xs" c="dimmed">—</Text>
+                      <Text size="xs" c="dimmed">
+                        —
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td ta="right">
                     <Text fw={500}>{product.unitsSold.toLocaleString()}</Text>
-                    <Text size="xs" c="dimmed">{product.unitShare.toFixed(1)}% of units</Text>
+                    <Text size="xs" c="dimmed">
+                      {product.unitShare.toFixed(1)}% of units
+                    </Text>
                   </Table.Td>
                   <Table.Td ta="right">
                     <Text fw={600}>{formatCurrency(product.revenue)}</Text>
@@ -449,7 +459,10 @@ export function ReportsPage() {
                     <Text c="dimmed">{formatCurrency(product.totalCost)}</Text>
                   </Table.Td>
                   <Table.Td ta="right">
-                    <Text fw={600} c={product.grossProfit >= 0 ? "teal" : "red"}>
+                    <Text
+                      fw={600}
+                      c={product.grossProfit >= 0 ? "teal" : "red"}
+                    >
                       {formatCurrency(product.grossProfit)}
                     </Text>
                   </Table.Td>
@@ -459,8 +472,8 @@ export function ReportsPage() {
                         product.grossProfitMargin >= 30
                           ? "teal"
                           : product.grossProfitMargin >= 10
-                          ? "yellow"
-                          : "red"
+                            ? "yellow"
+                            : "red"
                       }
                       variant="light"
                     >
@@ -476,7 +489,9 @@ export function ReportsPage() {
                         {formatCurrency(product.totalDiscounts)}
                       </Text>
                     ) : (
-                      <Text size="xs" c="dimmed">—</Text>
+                      <Text size="xs" c="dimmed">
+                        —
+                      </Text>
                     )}
                   </Table.Td>
                 </Table.Tr>
@@ -645,7 +660,7 @@ export function ReportsPage() {
                               .sort(
                                 (a: any, b: any) =>
                                   new Date(b.transactionDate).getTime() -
-                                  new Date(a.transactionDate).getTime()
+                                  new Date(a.transactionDate).getTime(),
                               )
                               .map((transaction: any) => (
                                 <Table.Tr key={transaction.id}>
@@ -653,12 +668,12 @@ export function ReportsPage() {
                                     <div>
                                       <Text size="sm" fw={500}>
                                         {new Date(
-                                          transaction.transactionDate
+                                          transaction.transactionDate,
                                         ).toLocaleDateString()}
                                       </Text>
                                       <Text size="xs" c="dimmed">
                                         {new Date(
-                                          transaction.transactionDate
+                                          transaction.transactionDate,
                                         ).toLocaleTimeString()}
                                       </Text>
                                     </div>
@@ -741,7 +756,7 @@ export function ReportsPage() {
     const { data, isLoading, error } = useSalesSummary(
       selectedPeriod,
       startDateStr,
-      endDateStr
+      endDateStr,
     );
 
     // recent expenses for the selected range (top 5)
@@ -970,7 +985,7 @@ export function ReportsPage() {
                   <span className="print-chip print-chip--danger">
                     Total:{" "}
                     {formatCurrency(
-                      expenses.reduce((s, e) => s + (e.total ?? 0), 0)
+                      expenses.reduce((s, e) => s + (e.total ?? 0), 0),
                     )}
                   </span>
                 </Group>
@@ -1377,6 +1392,7 @@ export function ReportsPage() {
                 <TransactionsTab
                   startDateStr={startDateStr}
                   endDateStr={endDateStr}
+                  selectedPeriod={selectedPeriod}
                 />
               </Tabs.Panel>
               <Tabs.Panel value="products" pt="md">
