@@ -80,17 +80,10 @@ export function POSPage() {
   const [formulation, setFormulation] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
-  const [itemTypeFilter, setItemTypeFilter] = useState<string>("All");
   const [stockFilter, setStockFilter] = useState<string>("All");
   const [isPhilHealthOnly, setIsPhilHealthOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<
-    | "name"
-    | "formulation"
-    | "price"
-    | "quantity"
-    | "category"
-    | "location"
-    | "itemtype"
+    "name" | "formulation" | "price" | "quantity" | "category" | "location"
   >("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -111,7 +104,7 @@ export function POSPage() {
 
   const [quantityModalOpened, setQuantityModalOpened] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<CatalogItem | null>(
-    null
+    null,
   );
   const [quantityToAdd, setQuantityToAdd] = useState<number>(1);
 
@@ -199,12 +192,6 @@ export function POSPage() {
   const catalogFilters = useMemo(
     () => ({
       search: debouncedSearchQuery || undefined,
-      itemType:
-        itemTypeFilter === "Products"
-          ? ("Product" as const)
-          : itemTypeFilter === "Tests"
-          ? ("Test" as const)
-          : undefined,
       productType: productType || undefined,
       formulation: formulation || undefined,
       category: category || undefined,
@@ -222,12 +209,11 @@ export function POSPage() {
       formulation,
       category,
       location,
-      itemTypeFilter,
       stockFilter,
       isPhilHealthOnly,
       sortBy,
       sortDirection,
-    ]
+    ],
   );
 
   const {
@@ -261,7 +247,7 @@ export function POSPage() {
 
     const cartItem = convertCatalogItemToCartItem(
       selectedProduct,
-      quantityToAdd
+      quantityToAdd,
     );
     cart.addItem(cartItem);
 
@@ -298,7 +284,7 @@ export function POSPage() {
   // NEW
   const hasStockIssues = useMemo(() => {
     return cart.items.some(
-      (cartItem) => cartItem.quantity > (cartItem.maxStock ?? Infinity)
+      (cartItem) => cartItem.quantity > (cartItem.maxStock ?? Infinity),
     );
   }, [cart.items]);
 
@@ -318,7 +304,7 @@ export function POSPage() {
       try {
         const enhancedCartItems = cart.items.map((cartItem) => {
           const catalogItem = filteredProducts.find(
-            (p) => p.id === cartItem.id
+            (p) => p.id === cartItem.id,
           );
           return {
             ...cartItem,
@@ -361,7 +347,7 @@ export function POSPage() {
             `Payment: ${transaction.paymentMethod}` +
             (transaction.changeAmount
               ? `\nChange: ${formatCurrency(transaction.changeAmount)}`
-              : "")
+              : ""),
         );
 
         cart.clear();
@@ -372,7 +358,7 @@ export function POSPage() {
         throw error;
       }
     },
-    [user, cart, filteredProducts, processTransaction, refetch]
+    [user, cart, filteredProducts, processTransaction, refetch],
   );
 
   const getStockColor = (item: CatalogItem) => {
@@ -415,11 +401,6 @@ export function POSPage() {
             }}
           >
             {item.name}
-            {item.itemType === "Test" && (
-              <Badge size="xs" color="blue" ml={4}>
-                Test
-              </Badge>
-            )}
           </Text>
         </div>
       ),
@@ -683,14 +664,14 @@ export function POSPage() {
         </Group>
       </Paper>
     ),
-    [currentTime, user, navigate, dispatch, isTauri, settings.storeName]
+    [currentTime, user, navigate, dispatch, isTauri, settings.storeName],
   );
 
   const handleSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setSearchQuery(event.currentTarget.value);
     },
-    []
+    [],
   );
 
   const handleProductTypeChange = useCallback((value: string | null) => {
@@ -709,10 +690,6 @@ export function POSPage() {
     setLocation(value);
   }, []);
 
-  const handleItemTypeFilterChange = useCallback((value: string | null) => {
-    setItemTypeFilter(value || "All");
-  }, []);
-
   const handleStockFilterChange = useCallback((value: string | null) => {
     setStockFilter(value || "All");
   }, []);
@@ -726,14 +703,13 @@ export function POSPage() {
         "quantity",
         "category",
         "location",
-        "itemtype",
       ] as const;
       if (validSortKeys.includes(newSortBy as any)) {
         setSortBy(newSortBy as (typeof validSortKeys)[number]);
         setSortDirection(newSortDirection);
       }
     },
-    []
+    [],
   );
 
   const filtersSection = useMemo(
@@ -815,8 +791,12 @@ export function POSPage() {
                       item
                         .toLowerCase()
                         .includes(
-                          (productTypeSearch || productType || "").toLowerCase()
-                        )
+                          (
+                            productTypeSearch ||
+                            productType ||
+                            ""
+                          ).toLowerCase(),
+                        ),
                     )
                     .map((item) => (
                       <Combobox.Option value={item} key={item}>
@@ -885,8 +865,12 @@ export function POSPage() {
                       item
                         .toLowerCase()
                         .includes(
-                          (formulationSearch || formulation || "").toLowerCase()
-                        )
+                          (
+                            formulationSearch ||
+                            formulation ||
+                            ""
+                          ).toLowerCase(),
+                        ),
                     )
                     .map((item) => (
                       <Combobox.Option value={item} key={item}>
@@ -955,8 +939,8 @@ export function POSPage() {
                       item
                         .toLowerCase()
                         .includes(
-                          (categorySearch || category || "").toLowerCase()
-                        )
+                          (categorySearch || category || "").toLowerCase(),
+                        ),
                     )
                     .map((item) => (
                       <Combobox.Option value={item} key={item}>
@@ -1025,8 +1009,8 @@ export function POSPage() {
                       item
                         .toLowerCase()
                         .includes(
-                          (locationSearch || location || "").toLowerCase()
-                        )
+                          (locationSearch || location || "").toLowerCase(),
+                        ),
                     )
                     .map((item) => (
                       <Combobox.Option value={item} key={item}>
@@ -1036,20 +1020,6 @@ export function POSPage() {
                 </Combobox.Options>
               </Combobox.Dropdown>
             </Combobox>
-          </div>
-
-          <div style={{ flex: "0 0 120px" }}>
-            <Select
-              placeholder="Show Items"
-              value={itemTypeFilter}
-              onChange={handleItemTypeFilterChange}
-              data={[
-                { value: "All", label: "All Items" },
-                { value: "Products", label: "Products Only" },
-                { value: "Tests", label: "Tests Only" },
-              ]}
-              clearable={false}
-            />
           </div>
 
           <div style={{ flex: "0 0 auto" }}>
@@ -1071,7 +1041,6 @@ export function POSPage() {
       formulation,
       category,
       location,
-      itemTypeFilter,
       stockFilter,
       referenceData,
       handleSearchChange,
@@ -1079,9 +1048,8 @@ export function POSPage() {
       handleFormulationChange,
       handleCategoryChange,
       handleLocationChange,
-      handleItemTypeFilterChange,
       handleStockFilterChange,
-    ]
+    ],
   );
 
   const productCatalogSection = useMemo(
@@ -1147,7 +1115,7 @@ export function POSPage() {
       sortDirection,
       handleSort,
       isPhilHealthOnly,
-    ]
+    ],
   );
 
   const cartSection = useMemo(
@@ -1188,7 +1156,7 @@ export function POSPage() {
         </div>
       </Paper>
     ),
-    [cart.items, cart.isEmpty, cart.clear, cartColumns]
+    [cart.items, cart.isEmpty, cart.clear, cartColumns],
   );
 
   // Check if senior ID is required and missing
@@ -1227,7 +1195,7 @@ export function POSPage() {
                 value={cart.discount.discountId || ""}
                 onChange={(value) => {
                   const selectedDiscount = discounts.find(
-                    (d) => d.id === value
+                    (d) => d.id === value,
                   );
                   cart.setDiscount({
                     discountId: value || null,
@@ -1319,10 +1287,10 @@ export function POSPage() {
             {isProcessing
               ? "Processing..."
               : hasStockIssues
-              ? "Please recheck cart items"
-              : isSeniorIdMissing
-              ? "Enter Senior Citizen ID"
-              : "Confirm Transaction"}
+                ? "Please recheck cart items"
+                : isSeniorIdMissing
+                  ? "Enter Senior Citizen ID"
+                  : "Confirm Transaction"}
           </Button>
         </Stack>
       </Paper>
@@ -1341,7 +1309,7 @@ export function POSPage() {
       settings.showVat,
       settings.vatAmount,
       discounts,
-    ]
+    ],
   );
 
   return (
@@ -1399,7 +1367,7 @@ export function POSPage() {
               clampBehavior="strict"
               hideControls
               description={`Enter quantity (max: ${getMaxQuantityForProduct(
-                selectedProduct.id
+                selectedProduct.id,
               )})`}
             />{" "}
             <Group justify="flex-end">

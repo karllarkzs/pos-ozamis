@@ -103,10 +103,9 @@ export function usePOSCatalog() {
     return useCatalog(defaultFilters);
   };
 
-  const searchItems = (searchTerm: string, itemType?: "Product" | "Test") => {
+  const searchItems = (searchTerm: string) => {
     const filters: CatalogFilters = {
       search: searchTerm,
-      itemType,
       pageSize: 20,
       sortBy: "name",
     };
@@ -114,34 +113,22 @@ export function usePOSCatalog() {
     return useCatalog(filters);
   };
 
-  const getProducts = (filters: Omit<CatalogFilters, "itemType"> = {}) => {
-    return useCatalog({
-      ...filters,
-      itemType: "Product",
-    });
+  const getProducts = (filters: CatalogFilters = {}) => {
+    return useCatalog(filters);
   };
 
-  const getTests = (filters: Omit<CatalogFilters, "itemType"> = {}) => {
-    return useCatalog({
-      ...filters,
-      itemType: "Test",
-    });
-  };
-
-  const getLowStockItems = (itemType?: "Product" | "Test") => {
+  const getLowStockItems = () => {
     return useCatalog({
       isLowStock: true,
-      itemType,
       sortBy: "quantity",
       sortDirection: "asc",
       pageSize: 100,
     });
   };
 
-  const getNoStockItems = (itemType?: "Product" | "Test") => {
+  const getNoStockItems = () => {
     return useCatalog({
       isNoStock: true,
-      itemType,
       sortBy: "name",
       sortDirection: "asc",
       pageSize: 100,
@@ -149,7 +136,7 @@ export function usePOSCatalog() {
   };
 
   const getDiscountableItems = (
-    filters: Omit<CatalogFilters, "isDiscountable"> = {}
+    filters: Omit<CatalogFilters, "isDiscountable"> = {},
   ) => {
     return useCatalog({
       ...filters,
@@ -159,7 +146,7 @@ export function usePOSCatalog() {
 
   const updateItemStockOptimistically = (
     itemId: string,
-    quantitySold: number
+    quantitySold: number,
   ) => {
     queryClient.setQueryData(
       catalogKeys.detail(itemId),
@@ -172,7 +159,7 @@ export function usePOSCatalog() {
           quantity: newQuantity,
           isLow: newQuantity <= 10, // This should ideally come from backend minimum stock setting
         };
-      }
+      },
     );
 
     queryClient.setQueriesData(
@@ -194,7 +181,7 @@ export function usePOSCatalog() {
             return item;
           }),
         };
-      }
+      },
     );
   };
 
@@ -210,7 +197,6 @@ export function usePOSCatalog() {
     getCatalogItems,
     searchItems,
     getProducts,
-    getTests,
     getLowStockItems,
     getNoStockItems,
     getDiscountableItems,
@@ -222,7 +208,7 @@ export function usePOSCatalog() {
 
 export function convertCatalogItemToCartItem(
   item: CatalogItem,
-  quantity: number
+  quantity: number,
 ): CartItem {
   return {
     id: item.id,
@@ -291,7 +277,7 @@ export function useProcessTransaction() {
       subtotal: number;
       vat: number;
       total: number;
-    }
+    },
   ) => {
     return mutation.mutateAsync({ items, paymentData });
   };

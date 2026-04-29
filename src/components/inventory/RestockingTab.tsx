@@ -24,13 +24,10 @@ import { notifications } from "@mantine/notifications";
 import {
   IconTrash,
   IconPackage,
-  IconTestPipe,
   IconCurrencyPeso,
   IconCalendar,
   IconMapPin,
   IconAlertCircle,
-  IconFlask,
-  IconDroplet,
 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "../DataTable";
 import { useSelector } from "react-redux";
@@ -39,21 +36,12 @@ import {
   useInfiniteProductsForRestock,
   useProduct,
 } from "../../hooks/api/useProducts";
-import {
-  useInfiniteReagentsForRestock,
-  useReagent,
-} from "../../hooks/api/useReagents";
 import { formatCurrency } from "../../utils/currency";
 import {
   useCreateRestockBatch,
   useRestockBatchCompanies,
 } from "../../hooks/api/useRestockBatches";
-import type {
-  Product,
-  ProductFilters,
-  Reagent,
-  RestockQueueItem,
-} from "../../lib/api";
+import type { Product, ProductFilters, RestockQueueItem } from "../../lib/api";
 
 interface CustomSelectProps {
   label: string;
@@ -107,7 +95,7 @@ function CustomSelect({
   };
 
   const filteredOptions = data.filter((item) =>
-    item.toLowerCase().includes((value || "").toLowerCase())
+    item.toLowerCase().includes((value || "").toLowerCase()),
   );
 
   const options = filteredOptions.map((item) => (
@@ -172,51 +160,36 @@ function CustomSelect({
 }
 
 export function RestockingTab() {
-  
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [selectedItemType, setSelectedItemType] = useState<
-    "Product" | "Reagent" | null
-  >(null);
   const [detailModalOpened, setDetailModalOpened] = useState(false);
 
-  
   const [restockQueue, setRestockQueue] = useState<RestockQueueItem[]>([]);
 
-  
   const [batchCompany, setBatchCompany] = useState("");
   const [batchSupplierReference, setBatchSupplierReference] = useState("");
   const [batchReceiveDate, setBatchReceiveDate] = useState<Date>(new Date());
   const [batchNotes, setBatchNotes] = useState("");
 
-  
   const debouncedSearchQuery = "";
 
-  
   const user = useSelector(selectUser);
   const createRestockBatchMutation = useCreateRestockBatch();
   const { data: companyNames } = useRestockBatchCompanies();
 
-  
   const { data: selectedProductResponse, isLoading: productDetailLoading } =
-    useProduct(selectedItemType === "Product" ? selectedItemId || "" : "");
-  const { data: selectedReagent, isLoading: reagentDetailLoading } = useReagent(
-    selectedItemType === "Reagent" ? selectedItemId || "" : ""
-  );
+    useProduct(selectedItemId || "");
 
-  
   const selectedProduct =
     (selectedProductResponse as any)?.data || selectedProductResponse;
 
-  
   const productFilters: Omit<ProductFilters, "page"> = useMemo(
     () => ({
       searchTerm: debouncedSearchQuery || undefined,
       pageSize: 50,
     }),
-    [debouncedSearchQuery]
+    [debouncedSearchQuery],
   );
 
-  
   const {
     data: infiniteProductData,
     isLoading: productsLoading,
@@ -225,67 +198,43 @@ export function RestockingTab() {
     isFetchingNextPage: isFetchingNextProductPage,
   } = useInfiniteProductsForRestock(productFilters);
 
-  const {
-    data: infiniteReagentData,
-    isLoading: reagentsLoading,
-    fetchNextPage: fetchNextReagentPage,
-    hasNextPage: hasNextReagentPage,
-    isFetchingNextPage: isFetchingNextReagentPage,
-  } = useInfiniteReagentsForRestock({ pageSize: 50 });
-
   const restockProducts =
     infiniteProductData?.pages?.flatMap((page) => page.data) || [];
-  const restockReagents =
-    infiniteReagentData?.pages?.flatMap((page) => page.data) || [];
 
-  
-  const addToRestockQueue = useCallback(
-    (item: Product | Reagent, itemType: "Product" | "Reagent") => {
-      const queueId = `${itemType}_${item.id}_${Date.now()}`;
+  const addToRestockQueue = useCallback((item: Product) => {
+    const queueId = `Product_${item.id}_${Date.now()}`;
 
-      const restockItem: RestockQueueItem = {
-        id: queueId,
-        itemType,
-        originalItem: item,
-        quantity: 0,
-        retailPrice:
-          itemType === "Product"
-            ? (item as Product).retailPrice
-            : (item as Reagent).unitCost,
-        wholesalePrice:
-          itemType === "Product"
-            ? (item as Product).wholesalePrice
-            : (item as Reagent).unitCost * 0.8,
-        expirationDate: item.expirationDate,
-        supplierBatchNumber:
-          itemType === "Product"
-            ? (item as Product).batchNumber
-            : (item as Reagent).batchNumber,
-        notes: null,
-        hasFieldChanges: false,
-        shouldCreateNew: false,
-      };
+    const restockItem: RestockQueueItem = {
+      id: queueId,
+      itemType: "Product",
+      originalItem: item,
+      quantity: 0,
+      retailPrice: item.retailPrice,
+      wholesalePrice: item.wholesalePrice,
+      expirationDate: item.expirationDate,
+      supplierBatchNumber: item.batchNumber,
+      notes: null,
+      hasFieldChanges: false,
+      shouldCreateNew: false,
+    };
 
-      setRestockQueue((prev) => {
-        const existsIndex = prev.findIndex(
-          (qItem) =>
-            qItem.originalItem.id === item.id && qItem.itemType === itemType
-        );
+    setRestockQueue((prev) => {
+      const existsIndex = prev.findIndex(
+        (qItem) => qItem.originalItem.id === item.id,
+      );
 
-        if (existsIndex >= 0) {
-          const updated = [...prev];
-          updated[existsIndex] = {
-            ...updated[existsIndex],
-            originalItem: item,
-          };
-          return updated;
-        } else {
-          return [...prev, restockItem];
-        }
-      });
-    },
-    []
-  );
+      if (existsIndex >= 0) {
+        const updated = [...prev];
+        updated[existsIndex] = {
+          ...updated[existsIndex],
+          originalItem: item,
+        };
+        return updated;
+      } else {
+        return [...prev, restockItem];
+      }
+    });
+  }, []);
 
   const removeFromRestockQueue = useCallback((queueId: string) => {
     setRestockQueue((prev) => prev.filter((item) => item.id !== queueId));
@@ -299,7 +248,6 @@ export function RestockingTab() {
 
           const updated = { ...item, ...updates };
 
-          
           const originalItem = item.originalItem;
           const hasNonQuantityChanges =
             updated.expirationDate !== originalItem.expirationDate ||
@@ -312,13 +260,12 @@ export function RestockingTab() {
           updated.shouldCreateNew = hasNonQuantityChanges;
 
           return updated;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
-  
   const handleCreateRestockBatch = useCallback(async () => {
     if (!user) {
       notifications.show({
@@ -365,39 +312,20 @@ export function RestockingTab() {
         supplierReference: batchSupplierReference || null,
         notes: batchNotes || null,
         items: restockQueue.map((item) => ({
-          itemType: item.itemType,
-          productId:
-            item.itemType === "Product" && !item.shouldCreateNew
-              ? item.originalItem.id
-              : null,
-          reagentId:
-            item.itemType === "Reagent" && !item.shouldCreateNew
-              ? item.originalItem.id
-              : null,
-          ...(item.itemType === "Product" &&
-            item.shouldCreateNew && {
-              generic: (item.originalItem as Product).generic || undefined,
-              brand: (item.originalItem as Product).brand,
-              barcode: (item.originalItem as Product).barcode || undefined,
-              type: (item.originalItem as Product).type || undefined,
-              formulation:
-                (item.originalItem as Product).formulation || undefined,
-              category: (item.originalItem as Product).category || undefined,
-              location: (item.originalItem as Product).location || undefined,
-              minimumStock: (item.originalItem as Product).minimumStock,
-              isDiscountable: (item.originalItem as Product).isDiscountable,
-            }),
-          ...(item.itemType === "Reagent" &&
-            item.shouldCreateNew && {
-              reagentName: (item.originalItem as Reagent).name,
-              reagentType: ((item.originalItem as Reagent).reagentType ===
-              "ChargeBased"
-                ? 0
-                : 1) as 0 | 1,
-              unitOfMeasure: (item.originalItem as Reagent).unitOfMeasure || "",
-              chargesPerUnit: (item.originalItem as Reagent).chargesPerUnit,
-              volume: (item.originalItem as Reagent).volume,
-            }),
+          itemType: "Product" as const,
+          productId: !item.shouldCreateNew ? item.originalItem.id : null,
+          ...(item.shouldCreateNew && {
+            generic: (item.originalItem as Product).generic || undefined,
+            brand: (item.originalItem as Product).brand,
+            barcode: (item.originalItem as Product).barcode || undefined,
+            type: (item.originalItem as Product).type || undefined,
+            formulation:
+              (item.originalItem as Product).formulation || undefined,
+            category: (item.originalItem as Product).category || undefined,
+            location: (item.originalItem as Product).location || undefined,
+            minimumStock: (item.originalItem as Product).minimumStock,
+            isDiscountable: (item.originalItem as Product).isDiscountable,
+          }),
           quantity: item.quantity,
           wholesalePrice: item.wholesalePrice,
           retailPrice: item.retailPrice,
@@ -415,7 +343,6 @@ export function RestockingTab() {
         color: "green",
       });
 
-      
       setBatchCompany("");
       setBatchSupplierReference("");
       setBatchReceiveDate(new Date());
@@ -439,31 +366,24 @@ export function RestockingTab() {
     createRestockBatchMutation,
   ]);
 
-  
   const getStockColor = (item: Product) => {
     if (item.quantity === 0) return "red";
     if (item.isLowStock) return "orange";
     return "green";
   };
 
-  const handleRowClick = useCallback(
-    (item: Product | Reagent, type: "Product" | "Reagent") => {
-      setSelectedItemId(item.id);
-      setSelectedItemType(type);
-      setDetailModalOpened(true);
-    },
-    []
-  );
+  const handleRowClick = useCallback((item: Product) => {
+    setSelectedItemId(item.id);
+    setDetailModalOpened(true);
+  }, []);
 
   const handleCloseDetailModal = useCallback(() => {
     setDetailModalOpened(false);
     setTimeout(() => {
       setSelectedItemId(null);
-      setSelectedItemType(null);
     }, 200);
   }, []);
 
-  
   const restockProductColumns: DataTableColumn<Product>[] = useMemo(
     () => [
       {
@@ -532,7 +452,7 @@ export function RestockingTab() {
             variant="light"
             onClick={(e) => {
               e.stopPropagation();
-              addToRestockQueue(item, "Product");
+              addToRestockQueue(item);
             }}
           >
             Add
@@ -540,95 +460,9 @@ export function RestockingTab() {
         ),
       },
     ],
-    [getStockColor, addToRestockQueue]
+    [getStockColor, addToRestockQueue],
   );
 
-  const restockReagentColumns: DataTableColumn<Reagent>[] = useMemo(
-    () => [
-      {
-        key: "name",
-        title: "Reagent",
-        width: 200,
-        sortable: true,
-        sortKey: "name",
-        render: (item: Reagent) => (
-          <div>
-            <Text size="sm" fw={500}>
-              {item.name}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {item.reagentTypeName}
-            </Text>
-          </div>
-        ),
-      },
-      {
-        key: "stock",
-        title: "Stock",
-        width: 80,
-        align: "center",
-        headerAlign: "center",
-        sortable: true,
-        sortKey: "quantity",
-        render: (item: Reagent) => (
-          <div>
-            <Badge
-              color={
-                item.quantity === 0
-                  ? "red"
-                  : item.isLowStock
-                  ? "orange"
-                  : "green"
-              }
-              variant={item.quantity === 0 ? "filled" : "light"}
-              size="sm"
-            >
-              {item.quantity}
-            </Badge>
-            <Text size="xs" c="dimmed">
-              Min: {item.minimumStock}
-            </Text>
-          </div>
-        ),
-      },
-      {
-        key: "cost",
-        title: "Cost",
-        width: 90,
-        align: "right",
-        headerAlign: "right",
-        sortable: true,
-        sortKey: "unitCost",
-        render: (item: Reagent) => (
-          <Text size="xs" fw={500}>
-            ₱{item.unitCost.toFixed(2)}
-          </Text>
-        ),
-      },
-      {
-        key: "actions",
-        title: "",
-        width: 80,
-        align: "center",
-        headerAlign: "center",
-        render: (item: Reagent) => (
-          <Button
-            size="xs"
-            variant="light"
-            onClick={(e) => {
-              e.stopPropagation();
-              addToRestockQueue(item, "Reagent");
-            }}
-          >
-            Add
-          </Button>
-        ),
-      },
-    ],
-    [addToRestockQueue]
-  );
-
-  
   const restockQueueColumns: DataTableColumn<RestockQueueItem>[] = useMemo(
     () => [
       {
@@ -638,16 +472,10 @@ export function RestockingTab() {
         render: (item: RestockQueueItem) => (
           <div>
             <Text size="sm" fw={500}>
-              {item.itemType === "Product"
-                ? (item.originalItem as Product).brand
-                : (item.originalItem as Reagent).name}
+              {(item.originalItem as Product).brand}
             </Text>
             <Text size="xs" c="dimmed">
-              {item.itemType === "Product"
-                ? (item.originalItem as Product).generic
-                : `${item.itemType} - ${
-                    (item.originalItem as Reagent).reagentTypeName
-                  }`}
+              {(item.originalItem as Product).generic}
             </Text>
             <Badge
               size="xs"
@@ -773,7 +601,7 @@ export function RestockingTab() {
         ),
       },
     ],
-    [updateRestockQueueItem, removeFromRestockQueue]
+    [updateRestockQueueItem, removeFromRestockQueue],
   );
 
   return (
@@ -791,7 +619,7 @@ export function RestockingTab() {
       <div
         style={{
           display: "grid",
-          gridTemplateRows: "auto 1fr 1fr",
+          gridTemplateRows: "auto 1fr",
           gap: "0.5rem",
           overflow: "hidden",
         }}
@@ -827,37 +655,7 @@ export function RestockingTab() {
               horizontalScroll
               minWidth="480px"
               height="100%"
-              onRowClick={(item) => handleRowClick(item, "Product")}
-            />
-          </div>
-        </Paper>
-
-        <Paper
-          p="xs"
-          withBorder
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minHeight: 0,
-          }}
-        >
-          <Text size="sm" fw={500} mb={4}>
-            Reagents ({restockReagents.length})
-          </Text>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <DataTable
-              data={restockReagents}
-              columns={restockReagentColumns}
-              loading={reagentsLoading || isFetchingNextReagentPage}
-              hasMore={hasNextReagentPage}
-              onLoadMore={fetchNextReagentPage}
-              emptyMessage="No reagents need restocking - All items are well stocked!"
-              stickyHeader
-              horizontalScroll
-              minWidth="480px"
-              height="100%"
-              onRowClick={(item) => handleRowClick(item, "Reagent")}
+              onRowClick={(item) => handleRowClick(item)}
             />
           </div>
         </Paper>
@@ -1020,23 +818,19 @@ export function RestockingTab() {
         onClose={handleCloseDetailModal}
         title={
           <Group gap="xs">
-            {selectedItemType === "Product" ? (
-              <IconPackage size={20} />
-            ) : (
-              <IconTestPipe size={20} />
-            )}
+            <IconPackage size={20} />
             <Text size="lg" fw={600}>
-              {selectedItemType} Details
+              Product Details
             </Text>
           </Group>
         }
         size="lg"
       >
-        {productDetailLoading || reagentDetailLoading ? (
+        {productDetailLoading ? (
           <Center py="xl">
             <Loader />
           </Center>
-        ) : selectedItemType === "Product" && selectedProduct ? (
+        ) : selectedProduct ? (
           <Stack gap="md">
             <Paper withBorder p="md">
               <Stack gap="sm">
@@ -1089,8 +883,8 @@ export function RestockingTab() {
                       selectedProduct.quantity === 0
                         ? "red"
                         : selectedProduct.isLowStock
-                        ? "orange"
-                        : "green"
+                          ? "orange"
+                          : "green"
                     }
                   >
                     {selectedProduct.quantity}
@@ -1113,15 +907,15 @@ export function RestockingTab() {
                       selectedProduct.quantity === 0
                         ? "red"
                         : selectedProduct.isLowStock
-                        ? "orange"
-                        : "green"
+                          ? "orange"
+                          : "green"
                     }
                   >
                     {selectedProduct.quantity === 0
                       ? "Out of Stock"
                       : selectedProduct.isLowStock
-                      ? "Low Stock"
-                      : "In Stock"}
+                        ? "Low Stock"
+                        : "In Stock"}
                   </Badge>
                 </Group>
               </Stack>
@@ -1190,7 +984,7 @@ export function RestockingTab() {
                     </Group>
                     <Text size="sm">
                       {new Date(
-                        selectedProduct.expirationDate
+                        selectedProduct.expirationDate,
                       ).toLocaleDateString()}
                     </Text>
                   </Group>
@@ -1211,207 +1005,7 @@ export function RestockingTab() {
             <Button
               fullWidth
               onClick={() => {
-                addToRestockQueue(selectedProduct, "Product");
-                handleCloseDetailModal();
-              }}
-            >
-              Add to Restock Queue
-            </Button>
-          </Stack>
-        ) : selectedItemType === "Reagent" && selectedReagent ? (
-          <Stack gap="md">
-            <Paper withBorder p="md">
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Name
-                  </Text>
-                  <Text size="sm" fw={500}>
-                    {selectedReagent.name}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Type
-                  </Text>
-                  <Badge
-                    leftSection={
-                      selectedReagent.reagentType === "charge-based" ? (
-                        <IconFlask size={12} />
-                      ) : (
-                        <IconDroplet size={12} />
-                      )
-                    }
-                  >
-                    {selectedReagent.reagentTypeName}
-                  </Badge>
-                </Group>
-                {selectedReagent.unitOfMeasure && (
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Unit
-                    </Text>
-                    <Badge variant="outline">
-                      {selectedReagent.unitOfMeasure}
-                    </Badge>
-                  </Group>
-                )}
-              </Stack>
-            </Paper>
-
-            <Paper withBorder p="md">
-              <Text size="sm" fw={600} mb="sm">
-                Stock Information
-              </Text>
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Group gap="xs">
-                    <IconAlertCircle size={16} />
-                    <Text size="sm" c="dimmed">
-                      Unopened Containers
-                    </Text>
-                  </Group>
-                  <Badge
-                    size="lg"
-                    color={
-                      selectedReagent.quantity === 0
-                        ? "red"
-                        : selectedReagent.isLowStock
-                        ? "orange"
-                        : "green"
-                    }
-                  >
-                    {selectedReagent.quantity}
-                  </Badge>
-                </Group>
-                {selectedReagent.reagentType === "charge-based" ? (
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Current Charges
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {selectedReagent.currentCharges || 0}
-                    </Text>
-                  </Group>
-                ) : (
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Current Volume
-                    </Text>
-                    <Text size="sm" fw={500}>
-                      {selectedReagent.currentVolume || 0}{" "}
-                      {selectedReagent.unitOfMeasure}
-                    </Text>
-                  </Group>
-                )}
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Total Available
-                  </Text>
-                  <Text size="sm" fw={600} c="blue">
-                    {(selectedReagent.totalAvailableAmount || 0).toFixed(2)}{" "}
-                    {selectedReagent.reagentType === "charge-based"
-                      ? "charges"
-                      : selectedReagent.unitOfMeasure}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Minimum Stock
-                  </Text>
-                  <Text size="sm" fw={500}>
-                    {selectedReagent.minimumStock}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Stock Status
-                  </Text>
-                  <Badge
-                    color={
-                      selectedReagent.quantity === 0
-                        ? "red"
-                        : selectedReagent.isLowStock
-                        ? "orange"
-                        : "green"
-                    }
-                  >
-                    {selectedReagent.quantity === 0
-                      ? "Out of Stock"
-                      : selectedReagent.isLowStock
-                      ? "Low Stock"
-                      : "In Stock"}
-                  </Badge>
-                </Group>
-              </Stack>
-            </Paper>
-
-            <Paper withBorder p="md">
-              <Text size="sm" fw={600} mb="sm">
-                Pricing
-              </Text>
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Group gap="xs">
-                    <IconCurrencyPeso size={16} />
-                    <Text size="sm" c="dimmed">
-                      Unit Cost
-                    </Text>
-                  </Group>
-                  <Text size="sm" fw={600} c="green">
-                    {formatCurrency(selectedReagent.unitCost)}
-                  </Text>
-                </Group>
-                {selectedReagent.usagePercentage !== undefined && (
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Usage
-                    </Text>
-                    <Badge color="blue">
-                      {selectedReagent.usagePercentage.toFixed(1)}%
-                    </Badge>
-                  </Group>
-                )}
-              </Stack>
-            </Paper>
-
-            <Paper withBorder p="md">
-              <Text size="sm" fw={600} mb="sm">
-                Additional Information
-              </Text>
-              <Stack gap="sm">
-                {selectedReagent.batchNumber && (
-                  <Group justify="space-between">
-                    <Text size="sm" c="dimmed">
-                      Batch Number
-                    </Text>
-                    <Text size="xs" ff="monospace">
-                      {selectedReagent.batchNumber}
-                    </Text>
-                  </Group>
-                )}
-                {selectedReagent.expirationDate && (
-                  <Group justify="space-between">
-                    <Group gap="xs">
-                      <IconCalendar size={16} />
-                      <Text size="sm" c="dimmed">
-                        Expiration Date
-                      </Text>
-                    </Group>
-                    <Text size="sm">
-                      {new Date(
-                        selectedReagent.expirationDate
-                      ).toLocaleDateString()}
-                    </Text>
-                  </Group>
-                )}
-              </Stack>
-            </Paper>
-
-            <Button
-              fullWidth
-              onClick={() => {
-                addToRestockQueue(selectedReagent, "Reagent");
+                addToRestockQueue(selectedProduct);
                 handleCloseDetailModal();
               }}
             >

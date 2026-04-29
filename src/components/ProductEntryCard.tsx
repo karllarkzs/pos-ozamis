@@ -73,7 +73,7 @@ function CustomSelect({
   };
 
   const filteredOptions = data.filter((item) =>
-    item.toLowerCase().includes((value || "").toLowerCase())
+    item.toLowerCase().includes((value || "").toLowerCase()),
   );
 
   const options = filteredOptions.map((item) => (
@@ -178,7 +178,7 @@ export function ProductEntryCard({
       generic: product.generic,
       type: product.type,
     },
-    1000
+    1000,
   );
   const [debouncedAllFields] = useDebouncedValue(
     {
@@ -190,11 +190,11 @@ export function ProductEntryCard({
       location: product.location,
       expirationDate: product.expirationDate,
     },
-    1500
+    1500,
   );
 
   const hasErrors = Object.keys(errors).some((key) =>
-    key.startsWith(`products.${index}.`)
+    key.startsWith(`products.${index}.`),
   );
 
   const hasRequiredFields = useCallback(() => {
@@ -281,7 +281,7 @@ export function ProductEntryCard({
         setIsChecking(false);
       }
     },
-    [hasRequiredFields, index, onDuplicateStatus, isEditMode]
+    [hasRequiredFields, index, onDuplicateStatus, isEditMode],
   );
 
   useEffect(() => {
@@ -336,8 +336,8 @@ export function ProductEntryCard({
         borderColor: isAnyDuplicate
           ? "var(--mantine-color-orange-4)"
           : hasErrors
-          ? "var(--mantine-color-red-5)"
-          : undefined,
+            ? "var(--mantine-color-red-5)"
+            : undefined,
         borderWidth: isAnyDuplicate || hasErrors ? 2 : 1,
         backgroundColor: isAnyDuplicate
           ? "var(--mantine-color-orange-0)"
@@ -555,6 +555,16 @@ export function ProductEntryCard({
               checked={product.isDiscountable}
               onChange={(e) =>
                 onUpdate(index, "isDiscountable", e.currentTarget.checked)
+              }
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Checkbox
+              label="Is PhilHealth"
+              description="Is this product covered by PhilHealth?"
+              checked={product.isPhilHealth}
+              onChange={(e) =>
+                onUpdate(index, "isPhilHealth", e.currentTarget.checked)
               }
             />
           </Grid.Col>

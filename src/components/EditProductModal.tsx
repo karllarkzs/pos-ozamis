@@ -26,7 +26,7 @@ export function EditProductModal({
   onSuccess,
 }: EditProductModalProps) {
   const [products, setProducts] = useState<ProductWithDate[]>(
-    initialProducts as ProductWithDate[]
+    initialProducts as ProductWithDate[],
   );
   const [initialProductsState, setInitialProductsState] = useState<
     ProductWithDate[]
@@ -76,7 +76,7 @@ export function EditProductModal({
 
   const handleUpdateProduct = (index: number, field: string, value: any) => {
     setProducts((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
     );
     setErrors((prev) => {
       const newErrors = { ...prev };
@@ -107,6 +107,7 @@ export function EditProductModal({
         product.minimumStock !== initial.minimumStock ||
         product.location !== initial.location ||
         product.isDiscountable !== initial.isDiscountable ||
+        product.isPhilHealth !== initial.isPhilHealth ||
         product.expirationDate?.toString() !==
           initial.expirationDate?.toString()
       );
@@ -115,11 +116,11 @@ export function EditProductModal({
 
   const handleDeleteProduct = async (
     productId: string,
-    productName: string
+    productName: string,
   ) => {
     if (
       !window.confirm(
-        `Are you sure you want to delete product "${productName}"? This action cannot be undone.`
+        `Are you sure you want to delete product "${productName}"? This action cannot be undone.`,
       )
     ) {
       return;
@@ -174,6 +175,7 @@ export function EditProductModal({
                 : String(product.expirationDate)
               : null,
             isDiscountable: product.isDiscountable,
+            isPhilHealth: product.isPhilHealth,
           },
         });
       }

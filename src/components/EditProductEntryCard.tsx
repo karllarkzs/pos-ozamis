@@ -33,6 +33,7 @@ interface ProductEditRow {
   location: string;
   expirationDate: Date | null;
   isDiscountable: boolean;
+  isPhilHealth: boolean;
 }
 
 interface EditProductEntryCardProps {
@@ -64,16 +65,16 @@ export function EditProductEntryCard({
       onUpdate(index, field, value);
       setHasChanges(true);
     },
-    [index, onUpdate]
+    [index, onUpdate],
   );
 
   const hasErrors = Object.keys(errors).some((key) =>
-    key.startsWith(`products.${index}.`)
+    key.startsWith(`products.${index}.`),
   );
 
   const getDynamicData = (
     field: "type" | "formulation" | "category" | "location",
-    currentValue: string
+    currentValue: string,
   ) => {
     let baseData: string[] = [];
 
@@ -105,8 +106,8 @@ export function EditProductEntryCard({
         borderColor: hasErrors
           ? "var(--mantine-color-red-5)"
           : hasChanges
-          ? "var(--mantine-color-blue-4)"
-          : undefined,
+            ? "var(--mantine-color-blue-4)"
+            : undefined,
         borderWidth: hasErrors || hasChanges ? 2 : 1,
         backgroundColor: hasChanges ? "var(--mantine-color-blue-0)" : undefined,
       }}
@@ -328,6 +329,17 @@ export function EditProductEntryCard({
                 handleFieldChange("isDiscountable", event.currentTarget.checked)
               }
               error={errors[`products.${index}.isDiscountable`]}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Switch
+              label="PhilHealth"
+              description="Is this product covered by PhilHealth?"
+              checked={product.isPhilHealth}
+              onChange={(event) =>
+                handleFieldChange("isPhilHealth", event.currentTarget.checked)
+              }
+              error={errors[`products.${index}.isPhilHealth`]}
             />
           </Grid.Col>
         </Grid>

@@ -30,7 +30,7 @@ interface BatchEditProductModalProps {
 
 interface ProductEditRow {
   id: string;
-  originalId: string; 
+  originalId: string;
   barcode: string;
   generic: string;
   brand: string;
@@ -44,6 +44,7 @@ interface ProductEditRow {
   location: string;
   expirationDate: Date | null;
   isDiscountable: boolean;
+  isPhilHealth: boolean;
 }
 
 const createProductEditRow = (product: Product): ProductEditRow => ({
@@ -64,6 +65,7 @@ const createProductEditRow = (product: Product): ProductEditRow => ({
     ? new Date(product.expirationDate)
     : null,
   isDiscountable: product.isDiscountable ?? true,
+  isPhilHealth: product.isPhilHealth ?? false,
 });
 
 export function BatchEditProductModal({
@@ -148,7 +150,6 @@ export function BatchEditProductModal({
     },
   });
 
-  
   useEffect(() => {
     if (isOpen && products.length > 0) {
       form.setValues({
@@ -157,7 +158,6 @@ export function BatchEditProductModal({
     }
   }, [isOpen, products]);
 
-  
   useEffect(() => {
     if (!isOpen) {
       form.reset();
@@ -165,15 +165,14 @@ export function BatchEditProductModal({
     }
   }, [isOpen]);
 
-  
   const batchUpdateMutation = useMutation({
     mutationFn: async (
-      updates: { productId: string; data: Partial<Product> }[]
+      updates: { productId: string; data: Partial<Product> }[],
     ) => {
       const results = await Promise.allSettled(
         updates.map(({ productId, data }) =>
-          apiEndpoints.products.update(productId, data)
-        )
+          apiEndpoints.products.update(productId, data),
+        ),
       );
 
       const successful = results.filter((r) => r.status === "fulfilled").length;
@@ -199,7 +198,6 @@ export function BatchEditProductModal({
         });
       }
 
-      
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["productSummary"] });
 
@@ -222,7 +220,7 @@ export function BatchEditProductModal({
     (index: number, field: string, value: any) => {
       form.setFieldValue(`products.${index}.${field}`, value);
     },
-    [form]
+    [form],
   );
 
   const handleSubmit = async (values: { products: ProductEditRow[] }) => {
@@ -252,7 +250,7 @@ export function BatchEditProductModal({
             ? product.expirationDate.toISOString()
             : null,
           isDiscountable: product.isDiscountable,
-          
+          isPhilHealth: product.isPhilHealth,
           batchNumber:
             products.find((p) => p.id === product.originalId)?.batchNumber ||
             null,

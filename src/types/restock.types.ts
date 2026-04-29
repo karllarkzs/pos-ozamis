@@ -1,11 +1,9 @@
 import type { Product } from "./product.types";
-import type { Reagent } from "./reagent.types";
 
 export interface RestockBatchItem {
   id: string;
-  itemType: "Product" | "Reagent";
+  itemType: "Product";
   productId?: string | null;
-  reagentId?: string | null;
   quantity: number;
   wholesalePrice: number;
   retailPrice: number;
@@ -17,12 +15,6 @@ export interface RestockBatchItem {
   productGeneric?: string | null;
   productBrand?: string | null;
   productType?: string | null;
-
-  reagentName?: string | null;
-  reagentTypeName?: string | null;
-  chargesPerUnit?: number | null;
-  volume?: number | null;
-  unitOfMeasure?: string | null;
 }
 
 export interface RestockBatch {
@@ -51,10 +43,9 @@ export interface CreateRestockBatchRequest {
 }
 
 export interface CreateRestockBatchItemRequest {
-  itemType: "Product" | "Reagent";
+  itemType: "Product";
 
   productId?: string | null;
-  reagentId?: string | null;
 
   generic?: string;
   brand?: string;
@@ -65,12 +56,6 @@ export interface CreateRestockBatchItemRequest {
   location?: string;
   minimumStock?: number;
   isDiscountable?: boolean;
-
-  reagentName?: string;
-  reagentType?: 0 | 1;
-  unitOfMeasure?: string;
-  chargesPerUnit?: number;
-  volume?: number;
 
   quantity: number;
   wholesalePrice: number;
@@ -124,8 +109,8 @@ export interface RestockBatchSummary {
 
 export interface RestockQueueItem {
   id: string;
-  itemType: "Product" | "Reagent";
-  originalItem: Product | Reagent;
+  itemType: "Product";
+  originalItem: Product;
 
   quantity: number;
   retailPrice: number;
@@ -137,5 +122,3 @@ export interface RestockQueueItem {
   hasFieldChanges: boolean;
   shouldCreateNew: boolean;
 }
-
-

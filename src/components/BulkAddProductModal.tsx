@@ -41,6 +41,7 @@ interface ProductRow {
   location: string;
   expirationDate: Date | null;
   isDiscountable: boolean;
+  isPhilHealth: boolean;
 }
 
 const createEmptyRow = (): ProductRow => ({
@@ -58,6 +59,7 @@ const createEmptyRow = (): ProductRow => ({
   location: "",
   expirationDate: null,
   isDiscountable: true,
+  isPhilHealth: false,
 });
 
 export function BulkAddProductModal({
@@ -250,17 +252,17 @@ export function BulkAddProductModal({
       if (products.length <= 1) return;
       const newProducts = products.filter((_, i) => i !== index);
       const newDuplicateStatuses = duplicateStatuses.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       );
       const newInternalDuplicates = internalDuplicates.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       );
       setProducts(newProducts);
       setDuplicateStatuses(newDuplicateStatuses);
       setInternalDuplicates(newInternalDuplicates);
       form.setFieldValue("products", newProducts);
     },
-    [products, duplicateStatuses, internalDuplicates, form]
+    [products, duplicateStatuses, internalDuplicates, form],
   );
 
   const handleDuplicateStatus = useCallback(
@@ -271,7 +273,7 @@ export function BulkAddProductModal({
         return newStatuses;
       });
     },
-    []
+    [],
   );
 
   const updateProduct = useCallback(
@@ -281,7 +283,7 @@ export function BulkAddProductModal({
       setProducts(newProducts);
       form.setFieldValue(`products.${index}.${field}`, value);
     },
-    [products, form]
+    [products, form],
   );
 
   const handleSubmit = async () => {
@@ -318,6 +320,7 @@ export function BulkAddProductModal({
         location: product.location.trim() || undefined,
         expirationDate: product.expirationDate?.toISOString() || undefined,
         isDiscountable: product.isDiscountable,
+        isPhilHealth: product.isPhilHealth,
       }));
 
       const response = await apiEndpoints.products.createBatch({

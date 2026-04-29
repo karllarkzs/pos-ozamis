@@ -18,7 +18,13 @@ export interface User {
   };
 }
 
-export type RoleName = "Cashier" | "Admin" | "Lab" | "SuperAdmin" | "MedTech";
+export type RoleName =
+  | "Cashier"
+  | "Admin"
+  | "Lab"
+  | "SuperAdmin"
+  | "MedTech"
+  | "Owner";
 
 export const getRoleName = (roleNumber: number): RoleName => {
   switch (roleNumber) {
@@ -32,6 +38,8 @@ export const getRoleName = (roleNumber: number): RoleName => {
       return "SuperAdmin";
     case 5:
       return "MedTech";
+    case 6:
+      return "Owner";
     default:
       return "Cashier";
   }
@@ -49,6 +57,8 @@ export const getRoleNumber = (roleName: RoleName): number => {
       return 4;
     case "MedTech":
       return 5;
+    case "Owner":
+      return 6;
     default:
       return 1;
   }
@@ -66,6 +76,8 @@ export const getDefaultRouteForRole = (roleNumber: number): string => {
       return "/admin";
     case 5:
       return "/lab";
+    case 6:
+      return "/forbidden";
     default:
       return "/pos";
   }

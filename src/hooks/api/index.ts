@@ -1,7 +1,6 @@
 export * from "./useCatalog";
 export * from "./useTransactions";
 export * from "./useProducts";
-export * from "./useReagents";
 export * from "./useReports";
 export * from "./useRoles";
 export * from "./useUsers";
@@ -24,17 +23,6 @@ export type {
   TransactionListResponse,
   TransactionStatistics,
   VoidTransactionRequest,
-  Reagent,
-  ReagentResponse,
-  ReagentFilters,
-  CreateReagentRequest,
-  UpdateReagentRequest,
-  ReagentSummary,
-  UpdateStockRequest,
-  ReagentConsumption,
-  MaintenanceConsumptionRequest,
-  TestReagentRequirement,
-  ReagentType,
   DashboardOverview,
   TopItem,
   FinancialReport,

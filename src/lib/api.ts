@@ -1,13 +1,4 @@
 import axios from "axios";
-import type {
-  Test,
-  TestResponse,
-  TestFilters,
-  TestSummary,
-  CreateTestRequest,
-  UpdateTestRequest,
-  PerformTestRequest,
-} from "../types/global";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5288/api",
@@ -26,7 +17,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 api.interceptors.response.use(
@@ -52,12 +43,12 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export interface CatalogItem {
   id: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   name: string;
   price: number;
   formulation: string | null;
@@ -149,140 +140,6 @@ export interface ProductFilters {
   sortDirection?: "asc" | "desc";
 }
 
-export type ReagentType =
-  | "ChargeBased"
-  | "VolumeBased"
-  | "charge-based"
-  | "volume-based"
-  | 0
-  | 1;
-
-export interface Reagent {
-  id: string;
-  name: string;
-  reagentType: ReagentType;
-  reagentTypeName: string;
-  quantity: number;
-  minimumStock: number;
-  unitCost: number;
-  expirationDate?: string | null;
-  batchNumber?: string | null;
-  currentCharges?: number;
-  initialCharges?: number;
-  totalCharges?: number;
-  chargesPerUnit?: number;
-  currentVolume?: number;
-  initialVolume?: number;
-  totalVolume?: number;
-  volume?: number;
-  unitOfMeasure?: string;
-  isLowStock: boolean;
-  isExpired: boolean;
-  isExpiringSoon?: boolean;
-  availableAmount: number;
-  totalAvailableAmount?: number;
-  displayUnit: string;
-  usagePercentage?: number;
-  createdAt: string;
-  updatedAt?: string | null;
-  createdBy?: string | null;
-  updatedBy?: string | null;
-}
-
-export interface ReagentResponse {
-  data: Reagent[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface ReagentFilters {
-  page?: number;
-  pageSize?: number;
-  searchTerm?: string;
-  reagentType?: ReagentType;
-  batchNumber?: string;
-  isLowStock?: boolean;
-  isExpired?: boolean;
-  minUnitCost?: number;
-  maxUnitCost?: number;
-  expiringSoonDays?: number;
-
-  sortBy?:
-    | "name"
-    | "reagentType"
-    | "quantity"
-    | "unitCost"
-    | "expirationDate"
-    | "availableAmount"
-    | "minimumStock";
-  sortDirection?: "asc" | "desc";
-}
-
-export interface CreateReagentRequest {
-  name: string;
-  reagentType: ReagentType;
-
-  quantity: number;
-  minimumStock: number;
-  unitCost: number;
-  expirationDate?: string;
-  batchNumber?: string;
-
-  currentCharges?: number;
-  initialCharges?: number;
-
-  chargesPerUnit?: number;
-
-  currentVolume?: number;
-  initialVolume?: number;
-
-  volume?: number;
-  unitOfMeasure?: string;
-}
-
-export interface UpdateReagentRequest extends CreateReagentRequest {
-  id?: string;
-}
-
-export interface ReagentSummary {
-  totalReagents: number;
-  chargeBasedReagents: number;
-  volumeBasedReagents: number;
-  lowStockReagents: number;
-  expiredReagents: number;
-  expiringSoonReagents: number;
-  totalInventoryValue: number;
-}
-
-export interface UpdateStockRequest {
-  quantityChange?: number;
-  currentChargesChange?: number;
-  currentVolumeChange?: number;
-  volumeChange?: number;
-  reason?: string;
-  batchNumber?: string;
-}
-
-export interface ReagentConsumption {
-  reagentId: string;
-  consumedAmount: number;
-}
-
-export interface MaintenanceConsumptionRequest {
-  maintenanceType: string;
-  performedBy: string;
-  reagentConsumption: ReagentConsumption[];
-}
-
-export interface TestReagentRequirement {
-  reagentId: string;
-  requiredAmount: number;
-}
-
 export interface ProductSummary {
   totalProducts: number;
   lowStockProducts: number;
@@ -317,7 +174,7 @@ export interface DashboardOverview {
 export interface TopItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   quantity: number;
   revenue: number;
   profit: number;
@@ -360,7 +217,7 @@ export interface DailyBreakdown {
 export interface InventoryMovementItem {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   quantityMoved: number;
   revenue: number;
   movementCount: number;
@@ -371,7 +228,7 @@ export interface InventoryMovementItem {
 export interface InventoryAlert {
   id: string;
   name: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   currentStock: number;
   minimumStock: number;
   expirationDate?: string;
@@ -486,7 +343,13 @@ export interface CreateExpenseRequest {
   }[];
 }
 
-export type UserRole = "SuperAdmin" | "Admin" | "Cashier" | "Lab" | "MedTech";
+export type UserRole =
+  | "SuperAdmin"
+  | "Admin"
+  | "Cashier"
+  | "Lab"
+  | "MedTech"
+  | "Owner";
 
 export interface Role {
   id: number;
@@ -546,7 +409,6 @@ export interface CatalogResponse {
 }
 
 export interface CatalogFilters {
-  itemType?: "Product" | "Test" | null;
   search?: string;
   productType?: string;
   formulation?: string;
@@ -575,7 +437,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   maxStock: number;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   isDiscountable: boolean;
 }
 
@@ -601,9 +463,8 @@ export interface TransactionItemResponse {
   id: string;
   itemId: string;
   productId?: string | null;
-  testId?: string | null;
   itemName: string;
-  itemType: "Product" | "Test";
+  itemType: "Product";
   barcode?: string | null;
   quantity: number;
   unitPrice: number;
@@ -718,9 +579,8 @@ export interface DiscountRequest {
 
 export interface RestockBatchItem {
   id: string;
-  itemType: "Product" | "Reagent";
+  itemType: "Product";
   productId?: string | null;
-  reagentId?: string | null;
   quantity: number;
   wholesalePrice: number;
   retailPrice: number;
@@ -732,12 +592,6 @@ export interface RestockBatchItem {
   productGeneric?: string | null;
   productBrand?: string | null;
   productType?: string | null;
-
-  reagentName?: string | null;
-  reagentTypeName?: string | null;
-  chargesPerUnit?: number | null;
-  volume?: number | null;
-  unitOfMeasure?: string | null;
 }
 
 export interface RestockBatch {
@@ -766,10 +620,9 @@ export interface CreateRestockBatchRequest {
 }
 
 export interface CreateRestockBatchItemRequest {
-  itemType: "Product" | "Reagent";
+  itemType: "Product";
 
   productId?: string | null;
-  reagentId?: string | null;
 
   generic?: string;
   brand?: string;
@@ -780,12 +633,6 @@ export interface CreateRestockBatchItemRequest {
   location?: string;
   minimumStock?: number;
   isDiscountable?: boolean;
-
-  reagentName?: string;
-  reagentType?: 0 | 1;
-  unitOfMeasure?: string;
-  chargesPerUnit?: number;
-  volume?: number;
 
   quantity: number;
   wholesalePrice: number;
@@ -839,8 +686,8 @@ export interface RestockBatchSummary {
 
 export interface RestockQueueItem {
   id: string;
-  itemType: "Product" | "Reagent";
-  originalItem: Product | Reagent;
+  itemType: "Product";
+  originalItem: Product;
 
   quantity: number;
   retailPrice: number;
@@ -930,96 +777,12 @@ export const apiEndpoints = {
     check: () => api.get<{ status: string; timestamp: string }>("/health"),
   },
 
-  tests: {
-    getAll: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/list${queryString ? `?${queryString}` : ""}`
-      );
-    },
-
-    getById: (id: string) =>
-      api.get<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}`
-      ),
-
-    create: (test: CreateTestRequest) =>
-      api.post<{ success: boolean; message: string; data: Test }>(
-        "/tests",
-        test
-      ),
-
-    update: (id: string, test: CreateTestRequest) =>
-      api.put<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}`,
-        test
-      ),
-
-    delete: (id: string) =>
-      api.delete<{ success: boolean; message: string }>(`/tests/${id}`),
-
-    canPerform: (id: string) =>
-      api.get<{
-        success: boolean;
-        message: string;
-        data: { testId: string; canPerform: boolean };
-      }>(`/tests/${id}/can-perform`),
-
-    perform: (id: string, data: PerformTestRequest) =>
-      api.post<{ success: boolean; message: string; data: Test }>(
-        `/tests/${id}/perform`,
-        data
-      ),
-
-    getSummary: () =>
-      api.get<{ success: boolean; message: string; data: TestSummary }>(
-        "/tests/summary"
-      ),
-
-    getCannotPerform: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/cannot-perform${queryString ? `?${queryString}` : ""}`
-      );
-    },
-
-    getWithReagents: (filters?: TestFilters) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<TestResponse>(
-        `/tests/with-reagents${queryString ? `?${queryString}` : ""}`
-      );
-    },
-  },
   catalog: {
     getAll: (filters?: CatalogFilters, config?: { signal?: AbortSignal }) => {
       const queryString = filters ? buildQueryString(filters) : "";
       return api.get<CatalogResponse>(
         `/catalog${queryString ? `?${queryString}` : ""}`,
-        config
+        config,
       );
     },
     getById: (id: string, config?: { signal?: AbortSignal }) =>
@@ -1027,7 +790,7 @@ export const apiEndpoints = {
     checkExists: (id: string, config?: { signal?: AbortSignal }) =>
       api.get<{ itemId: string; exists: boolean }>(
         `/catalog/${id}/exists`,
-        config
+        config,
       ),
   },
 
@@ -1117,23 +880,23 @@ export const apiEndpoints = {
 
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/list${queryString ? `?${queryString}` : ""}`
+        `/products/list${queryString ? `?${queryString}` : ""}`,
       );
     },
 
     getById: (id: string) =>
       api.get<{ success: boolean; message: string; data: Product }>(
-        `/products/${id}`
+        `/products/${id}`,
       ),
     create: (product: Partial<Product>) =>
       api.post<{ success: boolean; message: string; data: Product }>(
         "/products",
-        product
+        product,
       ),
     update: (id: string, product: Partial<Product>) =>
       api.put<{ success: boolean; message: string; data: Product }>(
         `/products/${id}`,
-        product
+        product,
       ),
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/products/${id}`),
@@ -1144,7 +907,7 @@ export const apiEndpoints = {
         quantityChange: number;
         adjustmentType: string;
         reason: string;
-      }
+      },
     ) =>
       api.post<{
         id: string;
@@ -1181,7 +944,7 @@ export const apiEndpoints = {
 
     getByBarcode: (barcode: string) =>
       api.get<{ success: boolean; message: string; data: Product }>(
-        `/products/by-barcode/${barcode}`
+        `/products/by-barcode/${barcode}`,
       ),
     getAllByBarcode: (barcode: string) =>
       api.get<Product[]>(`/products/by-barcode/${barcode}/all`),
@@ -1199,7 +962,7 @@ export const apiEndpoints = {
       }
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/low-stock${queryString ? `?${queryString}` : ""}`
+        `/products/low-stock${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1214,7 +977,7 @@ export const apiEndpoints = {
       }
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/no-stock${queryString ? `?${queryString}` : ""}`
+        `/products/no-stock${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1229,7 +992,7 @@ export const apiEndpoints = {
       }
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/expired${queryString ? `?${queryString}` : ""}`
+        `/products/expired${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1244,7 +1007,7 @@ export const apiEndpoints = {
       }
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/expiring-soon${queryString ? `?${queryString}` : ""}`
+        `/products/expiring-soon${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1259,7 +1022,7 @@ export const apiEndpoints = {
       }
       const queryString = params.toString();
       return api.get<ProductResponse>(
-        `/products/for-restock${queryString ? `?${queryString}` : ""}`
+        `/products/for-restock${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1272,7 +1035,7 @@ export const apiEndpoints = {
     updateStock: (id: string, data: { quantity: number; reason?: string }) =>
       api.patch<{ success: boolean; message: string; data: Product }>(
         `/products/${id}/stock`,
-        data
+        data,
       ),
 
     updateStockBulk: (data: {
@@ -1392,7 +1155,7 @@ export const apiEndpoints = {
         }
         const queryString = params.toString();
         return api.get<DashboardOverview>(
-          `/reports/dashboard/overview${queryString ? `?${queryString}` : ""}`
+          `/reports/dashboard/overview${queryString ? `?${queryString}` : ""}`,
         );
       },
     },
@@ -1408,7 +1171,7 @@ export const apiEndpoints = {
           if (value) params.append(key, value);
         });
         return api.get<FinancialReport>(
-          `/reports/financial?${params.toString()}`
+          `/reports/financial?${params.toString()}`,
         );
       },
       daily: (date: string) =>
@@ -1437,40 +1200,14 @@ export const apiEndpoints = {
           if (value !== undefined) params.append(key, String(value));
         });
         return api.get<InventoryMovementItem[]>(
-          `/reports/inventory/fastest-moving-products?${params.toString()}`
-        );
-      },
-      fastestMovingTests: (filters: {
-        startDate: string;
-        endDate: string;
-        limit?: number;
-      }) => {
-        const params = new URLSearchParams();
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) params.append(key, String(value));
-        });
-        return api.get<InventoryMovementItem[]>(
-          `/reports/inventory/fastest-moving-tests?${params.toString()}`
-        );
-      },
-      mostConsumedReagents: (filters: {
-        startDate: string;
-        endDate: string;
-        limit?: number;
-      }) => {
-        const params = new URLSearchParams();
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) params.append(key, String(value));
-        });
-        return api.get<InventoryMovementItem[]>(
-          `/reports/inventory/most-consumed-reagents?${params.toString()}`
+          `/reports/inventory/fastest-moving-products?${params.toString()}`,
         );
       },
       lowStockItems: () =>
         api.get<InventoryAlert[]>("/reports/inventory/low-stock-items"),
       expiringItems: (daysAhead: number = 30) =>
         api.get<InventoryAlert[]>(
-          `/reports/inventory/expiring-items?daysAhead=${daysAhead}`
+          `/reports/inventory/expiring-items?daysAhead=${daysAhead}`,
         ),
       expiredItems: () =>
         api.get<InventoryAlert[]>("/reports/inventory/expired-items"),
@@ -1489,7 +1226,7 @@ export const apiEndpoints = {
           if (value !== undefined) params.append(key, String(value));
         });
         return api.get<TopItem[]>(
-          `/reports/transactions/top-selling-products?${params.toString()}`
+          `/reports/transactions/top-selling-products?${params.toString()}`,
         );
       },
 
@@ -1502,7 +1239,7 @@ export const apiEndpoints = {
           if (value) params.append(key, value);
         });
         return api.get<Record<string, number>>(
-          `/reports/transactions/payment-method-breakdown?${params.toString()}`
+          `/reports/transactions/payment-method-breakdown?${params.toString()}`,
         );
       },
       dailySalesPattern: (filters: { startDate: string; endDate: string }) => {
@@ -1511,7 +1248,7 @@ export const apiEndpoints = {
           if (value) params.append(key, value);
         });
         return api.get<DailyBreakdown[]>(
-          `/reports/transactions/daily-sales-pattern?${params.toString()}`
+          `/reports/transactions/daily-sales-pattern?${params.toString()}`,
         );
       },
     },
@@ -1533,7 +1270,7 @@ export const apiEndpoints = {
           if (value) params.append(key, value);
         });
         return api.get<number>(
-          `/reports/profit/average-transaction-value?${params.toString()}`
+          `/reports/profit/average-transaction-value?${params.toString()}`,
         );
       },
       byProductType: (filters: { startDate: string; endDate: string }) => {
@@ -1542,7 +1279,7 @@ export const apiEndpoints = {
           if (value) params.append(key, value);
         });
         return api.get<Record<string, number>>(
-          `/reports/profit/by-product-type?${params.toString()}`
+          `/reports/profit/by-product-type?${params.toString()}`,
         );
       },
     },
@@ -1560,193 +1297,9 @@ export const apiEndpoints = {
       if (filters?.endDate) params.append("endDate", filters.endDate);
       const qs = params.toString();
       return api.get<SalesSummaryResponse>(
-        `/business-reports/sales-summary${qs ? `?${qs}` : ""}`
+        `/business-reports/sales-summary${qs ? `?${qs}` : ""}`,
       );
     },
-  },
-
-  reagents: {
-    getAll: (filters?: ReagentFilters) => {
-      const params = new URLSearchParams();
-
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, String(value));
-          }
-        });
-      }
-
-      const queryString = params.toString();
-      return api.get<ReagentResponse>(
-        `/reagents/list${queryString ? `?${queryString}` : ""}`
-      );
-    },
-
-    getById: (id: string) =>
-      api.get<{ success: boolean; message: string; data: Reagent }>(
-        `/reagents/${id}`
-      ),
-
-    getByName: (name: string) =>
-      api.get<{ success: boolean; message: string; data: Reagent }>(
-        `/reagents/by-name/${encodeURIComponent(name)}`
-      ),
-
-    create: (reagent: CreateReagentRequest) =>
-      api.post<{ success: boolean; message: string; data: Reagent }>(
-        "/reagents",
-        reagent
-      ),
-
-    update: (id: string, reagent: UpdateReagentRequest) =>
-      api.put<{ success: boolean; message: string; data: Reagent }>(
-        `/reagents/${id}`,
-        reagent
-      ),
-
-    delete: (id: string) =>
-      api.delete<{ success: boolean; message: string }>(`/reagents/${id}`),
-
-    updateStock: (id: string, stockData: UpdateStockRequest) =>
-      api.post<{ success: boolean; message: string; data: Reagent }>(
-        `/reagents/${id}/update-stock`,
-        stockData
-      ),
-
-    getLowStock: () =>
-      api.get<{ success: boolean; data: Reagent[] }>("/reagents/low-stock"),
-
-    getExpired: () =>
-      api.get<{ success: boolean; data: Reagent[] }>("/reagents/expired"),
-
-    getExpiringSoon: (days: number = 30) =>
-      api.get<{ success: boolean; data: Reagent[] }>(
-        `/reagents/expiring-soon?days=${days}`
-      ),
-
-    getChargeBased: () =>
-      api.get<{ success: boolean; data: Reagent[] }>("/reagents/charge-based"),
-
-    getVolumeBased: () =>
-      api.get<{ success: boolean; data: Reagent[] }>("/reagents/volume-based"),
-
-    getSummary: () => api.get<ReagentSummary>("/reagents/summary"),
-
-    getForRestock: (filters?: { page?: number; pageSize?: number }) => {
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const queryString = params.toString();
-      return api.get<{
-        data: Reagent[];
-        page: number;
-        totalCount: number;
-        totalPages: number;
-        hasNextPage: boolean;
-        hasPreviousPage: boolean;
-      }>(`/reagents/for-restock${queryString ? `?${queryString}` : ""}`);
-    },
-
-    createBatch: (data: {
-      reagents: Array<{
-        name: string;
-        reagentType: "charge-based" | "volume-based";
-        quantity?: number;
-        chargesPerUnit?: number;
-        volume?: number;
-        unitOfMeasure?: string;
-        minimumStock: number;
-        unitCost: number;
-        expirationDate?: string;
-        batchNumber?: string;
-      }>;
-      validateDuplicates?: boolean;
-      continueOnError?: boolean;
-    }) => {
-      return api.post<{
-        success: boolean;
-        message: string;
-        totalRequested: number;
-        totalCreated: number;
-        totalFailed: number;
-        createdReagents: Array<{
-          index: number;
-          reagent: Reagent;
-        }>;
-        failedReagents: Array<{
-          index: number;
-          errors: string[];
-          originalReagent: any;
-        }>;
-      }>("/reagents/batch", data);
-    },
-
-    editBatch: (data: {
-      reagentUpdates: Record<
-        string,
-        {
-          unitCost?: number;
-          minimumStock?: number;
-          expirationDate?: string;
-        }
-      >;
-      reason?: string;
-      continueOnError?: boolean;
-    }) => {
-      return api.put<{
-        success: boolean;
-        message: string;
-        totalRequested: number;
-        totalUpdated: number;
-        totalFailed: number;
-        updatedReagents: Array<{
-          reagentId: string;
-          reagentName: string;
-          status: string;
-          updatedAt: string;
-        }>;
-        failedReagents: Array<{
-          reagentId: string;
-          reagentName: string;
-          error: string;
-          errorType: string;
-        }>;
-      }>("/reagents/batch", data);
-    },
-
-    deleteBatch: (data: { reagentIds: string[]; reason?: string }) => {
-      return api.delete<{
-        success: boolean;
-        message: string;
-        totalRequested: number;
-        totalDeleted: number;
-        totalFailed: number;
-        deletedReagents: Array<{
-          reagentId: string;
-          reagentName: string;
-          status: string;
-          deletedAt: string;
-        }>;
-        failedReagents: Array<{
-          reagentId: string;
-          reagentName: string;
-          error: string;
-          errorType: string;
-        }>;
-      }>("/reagents/batch", { data });
-    },
-
-    recordMaintenanceConsumption: (data: MaintenanceConsumptionRequest) =>
-      api.post<{ success: boolean; message: string }>(
-        "/reagents/maintenance-consumption",
-        data
-      ),
   },
 
   expenses: {
@@ -1767,7 +1320,7 @@ export const apiEndpoints = {
       }
       const queryString = searchParams.toString();
       return api.get<ExpenseListResponse>(
-        `/expenses${queryString ? `?${queryString}` : ""}`
+        `/expenses${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1792,7 +1345,7 @@ export const apiEndpoints = {
       }
       const queryString = searchParams.toString();
       return api.get<ExpenseStatistics>(
-        `/expenses/statistics${queryString ? `?${queryString}` : ""}`
+        `/expenses/statistics${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1807,7 +1360,7 @@ export const apiEndpoints = {
       }
       const queryString = searchParams.toString();
       return api.get<ExpenseByCategory>(
-        `/expenses/by-category${queryString ? `?${queryString}` : ""}`
+        `/expenses/by-category${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1820,7 +1373,7 @@ export const apiEndpoints = {
 
     getByUser: (
       userId: string,
-      params?: { startDate?: string; endDate?: string }
+      params?: { startDate?: string; endDate?: string },
     ) => {
       const searchParams = new URLSearchParams();
       if (params) {
@@ -1845,7 +1398,7 @@ export const apiEndpoints = {
 
     getByPurchaser: (
       purchasedBy: string,
-      params?: { startDate?: string; endDate?: string }
+      params?: { startDate?: string; endDate?: string },
     ) => {
       const searchParams = new URLSearchParams();
       searchParams.append("purchasedBy", purchasedBy);
@@ -1891,7 +1444,7 @@ export const apiEndpoints = {
 
       const queryString = params.toString();
       return api.get<RestockBatchResponse>(
-        `/restock-batches${queryString ? `?${queryString}` : ""}`
+        `/restock-batches${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1911,7 +1464,7 @@ export const apiEndpoints = {
 
     update: (
       id: string,
-      updates: { notes?: string; supplierReference?: string }
+      updates: { notes?: string; supplierReference?: string },
     ) =>
       api.put<{
         success: boolean;
@@ -1957,7 +1510,7 @@ export const apiEndpoints = {
 
       const queryString = queryParams.toString();
       return api.get<RestockBatchResponse>(
-        `/restock-batches/recent${queryString ? `?${queryString}` : ""}`
+        `/restock-batches/recent${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -1993,7 +1546,7 @@ export const apiEndpoints = {
 
       const queryString = params.toString();
       return api.get<TransactionListResponse>(
-        `/transactions${queryString ? `?${queryString}` : ""}`
+        `/transactions${queryString ? `?${queryString}` : ""}`,
       );
     },
 
@@ -2028,7 +1581,7 @@ export const apiEndpoints = {
 
       const queryString = queryParams.toString();
       return api.get<TransactionStatistics>(
-        `/transactions/statistics${queryString ? `?${queryString}` : ""}`
+        `/transactions/statistics${queryString ? `?${queryString}` : ""}`,
       );
     },
   },
@@ -2087,7 +1640,7 @@ export const apiEndpoints = {
 
     toggleSetting: (key: string) =>
       api.patch<{ message: string; key: string; isActive: boolean }>(
-        `/systemsettings/${key}/toggle`
+        `/systemsettings/${key}/toggle`,
       ),
 
     seed: () =>

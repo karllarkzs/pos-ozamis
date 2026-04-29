@@ -85,8 +85,8 @@ export function UserModal({
         !value || value.trim().length < 3
           ? "Username must be at least 3 characters"
           : value.trim().length > 50
-          ? "Username must be less than 50 characters"
-          : null,
+            ? "Username must be less than 50 characters"
+            : null,
       email: (value) => {
         if (!value || !value.trim()) return "Email is required";
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
@@ -103,14 +103,14 @@ export function UserModal({
         !value || value.trim().length < 1
           ? "First name is required"
           : value.trim().length > 100
-          ? "First name must be less than 100 characters"
-          : null,
+            ? "First name must be less than 100 characters"
+            : null,
       lastName: (value) =>
         !value || value.trim().length < 1
           ? "Last name is required"
           : value.trim().length > 100
-          ? "Last name must be less than 100 characters"
-          : null,
+            ? "Last name must be less than 100 characters"
+            : null,
     },
   });
 
@@ -241,6 +241,8 @@ export function UserModal({
         return "violet";
       case "MedTech":
         return "teal";
+      case "Owner":
+        return "orange";
       default:
         return "gray";
     }
