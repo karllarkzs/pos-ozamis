@@ -22,6 +22,7 @@ import {
   IconTrash,
   IconAlertCircle,
 } from "@tabler/icons-react";
+import ResetPasswordModal from "./ResetPasswordModal";
 import type {
   User,
   UserRole,
@@ -72,6 +73,7 @@ export function UserModal({
   mode,
 }: UserModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
 
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
@@ -423,6 +425,15 @@ export function UserModal({
                 Deactivate
               </Button>
             )}
+            {mode === "edit" && user && (
+              <Button
+                variant="light"
+                onClick={() => setResetOpen(true)}
+                disabled={isSubmitting}
+              >
+                Change Password
+              </Button>
+            )}
             <Group ml="auto">
               <Button
                 variant="subtle"
@@ -443,6 +454,13 @@ export function UserModal({
           </Group>
         </Stack>
       </form>
+      {mode === "edit" && user && (
+        <ResetPasswordModal
+          opened={resetOpen}
+          onClose={() => setResetOpen(false)}
+          userId={user.id}
+        />
+      )}
     </Modal>
   );
 }
