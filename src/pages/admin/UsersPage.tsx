@@ -9,6 +9,7 @@ import {
   Loader,
   Center,
   Stack,
+  Switch,
 } from "@mantine/core";
 import {
   IconUserPlus,
@@ -26,8 +27,9 @@ export function UsersPage() {
   const [userModalOpened, setUserModalOpened] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [includeInactive, setIncludeInactive] = useState(false);
 
-  const { data: users = [], isLoading, refetch } = useUsers(false);
+  const { data: users = [], isLoading, refetch } = useUsers(includeInactive);
 
   const handleAddUser = () => {
     setSelectedUser(null);
@@ -189,12 +191,19 @@ export function UsersPage() {
       <div style={{ flexShrink: 0 }}>
         <Group justify="space-between" mb="md">
           <Title order={2}>User Management</Title>
-          <Button
-            leftSection={<IconUserPlus size={16} />}
-            onClick={handleAddUser}
-          >
-            Add User
-          </Button>
+          <Group gap="md">
+            <Switch
+              label="Include Inactive"
+              checked={includeInactive}
+              onChange={(e) => setIncludeInactive(e.currentTarget.checked)}
+            />
+            <Button
+              leftSection={<IconUserPlus size={16} />}
+              onClick={handleAddUser}
+            >
+              Add User
+            </Button>
+          </Group>
         </Group>
       </div>
 
