@@ -80,7 +80,7 @@ export default function ResetPasswordModal({ opened, onClose, userId }: Props) {
             {...form.getInputProps("confirmPassword")}
           />
 
-          <Group position="right" mt="md">
+          <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
