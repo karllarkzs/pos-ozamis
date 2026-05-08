@@ -9,7 +9,10 @@ import {
   IconCalendarEvent,
 } from "@tabler/icons-react";
 import { StatsCard } from "./StatsCard";
-import { useDashboardOverview } from "../hooks/api/useReports";
+import {
+  useDashboardOverview,
+  useDashboardOverviewCustom,
+} from "../hooks/api/useReports";
 import { formatCurrency } from "../utils/currency";
 
 type PeriodOption =
@@ -17,7 +20,8 @@ type PeriodOption =
   | "yesterday"
   | "thisWeek"
   | "thisMonth"
-  | "thisYear";
+  | "thisYear"
+  | "custom";
 
 interface ComprehensiveDashboardOverviewProps {
   period?: PeriodOption;
@@ -27,8 +31,22 @@ interface ComprehensiveDashboardOverviewProps {
 
 export function ComprehensiveDashboardOverview({
   period = "today",
+  startDate,
+  endDate,
 }: ComprehensiveDashboardOverviewProps) {
-  const { data: overview, isLoading, error } = useDashboardOverview(period);
+  const isCustom = period === "custom";
+  const standardQuery = useDashboardOverview(
+    isCustom ? "today" : (period as any),
+  );
+  const customQuery = useDashboardOverviewCustom(
+    startDate ?? "",
+    endDate ?? "",
+  );
+  const {
+    data: overview,
+    isLoading,
+    error,
+  } = isCustom ? customQuery : standardQuery;
 
   if (error) {
     return (
@@ -175,7 +193,7 @@ export function ComprehensiveDashboardOverview({
             value={
               overview && overview.transactionsCount > 0
                 ? (overview.productsSold / overview.transactionsCount).toFixed(
-                    1
+                    1,
                   )
                 : "0"
             }

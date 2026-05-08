@@ -1,6 +1,6 @@
 export interface CatalogItem {
   id: string;
-  itemType: "Product";
+  itemType: "Product" | "LabTest";
   name: string;
   price: number;
   formulation: string | null;
@@ -35,6 +35,7 @@ export interface CatalogFilters {
   isNoStock?: boolean;
   isDiscountable?: boolean;
   isPhilHealth?: boolean;
+  itemType?: "Product" | "LabTest";
   sortBy?:
     | "name"
     | "formulation"

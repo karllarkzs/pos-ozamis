@@ -838,6 +838,47 @@ export const apiEndpoints = {
       ),
   },
 
+  labTests: {
+    getAll: (filters?: import("../types/labtest.types").LabTestFilters) => {
+      const params = new URLSearchParams();
+      if (filters?.search) params.append("search", filters.search);
+      if (filters?.category != null)
+        params.append("category", String(filters.category));
+      if (filters?.isAvailable != null)
+        params.append("isAvailable", String(filters.isAvailable));
+      if (filters?.isPhilHealth != null)
+        params.append("isPhilHealth", String(filters.isPhilHealth));
+      if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters?.sortDirection)
+        params.append("sortDirection", filters.sortDirection);
+      if (filters?.page != null) params.append("page", String(filters.page));
+      if (filters?.pageSize != null)
+        params.append("pageSize", String(filters.pageSize));
+      const qs = params.toString();
+      return api.get<import("../types/labtest.types").PaginatedLabTestResponse>(
+        `/lab-tests${qs ? `?${qs}` : ""}`,
+      );
+    },
+    getById: (id: string) =>
+      api.get<import("../types/labtest.types").LabTest>(`/lab-tests/${id}`),
+    create: (data: import("../types/labtest.types").LabTestCreate) =>
+      api.post<import("../types/labtest.types").LabTest>(`/lab-tests`, data),
+    update: (
+      id: string,
+      data: import("../types/labtest.types").LabTestUpdate,
+    ) =>
+      api.put<import("../types/labtest.types").LabTest>(
+        `/lab-tests/${id}`,
+        data,
+      ),
+    delete: (id: string) => api.delete(`/lab-tests/${id}`),
+    toggleAvailability: (id: string) =>
+      api.patch<import("../types/labtest.types").LabTest>(
+        `/lab-tests/${id}/availability`,
+        {},
+      ),
+  },
+
   auth: {
     login: (credentials: { username: string; password: string }) =>
       api.post<{
@@ -938,10 +979,7 @@ export const apiEndpoints = {
         product,
       ),
     update: (id: string, product: Partial<Product>) =>
-      api.put<{ success: boolean; message: string; data: Product }>(
-        `/products/${id}`,
-        product,
-      ),
+      api.put<Product>(`/products/${id}`, product),
     delete: (id: string) =>
       api.delete<{ success: boolean; message: string }>(`/products/${id}`),
 

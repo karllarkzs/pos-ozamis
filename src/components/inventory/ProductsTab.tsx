@@ -50,7 +50,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [formulationFilter, setFormulationFilter] = useState<string | null>(
-    null
+    null,
   );
   const [isLowStock, setIsLowStock] = useState<boolean | null>(null);
   const [isNoStock, setIsNoStock] = useState<boolean | null>(null);
@@ -60,7 +60,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
   const [sortBy, setSortBy] = useState<string>("brand");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const [editModalOpened, setEditModalOpened] = useState(false);
@@ -100,7 +100,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
       isPhilHealth,
       sortBy,
       sortDirection,
-    ]
+    ],
   );
 
   const {
@@ -162,7 +162,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setSearchQuery(event.currentTarget.value);
     },
-    []
+    [],
   );
 
   const handleSort = useCallback(
@@ -174,7 +174,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         setSortDirection("asc");
       }
     },
-    [sortBy, sortDirection]
+    [sortBy, sortDirection],
   );
 
   const handleSelectProduct = useCallback(
@@ -189,7 +189,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         return newSet;
       });
     },
-    []
+    [],
   );
 
   const handleSelectAllProducts = useCallback(
@@ -200,7 +200,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         setSelectedProductIds(new Set());
       }
     },
-    [products]
+    [products],
   );
 
   const handleBatchDelete = useCallback(
@@ -208,7 +208,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
       if (productIds.size === 0) return;
 
       const confirmed = window.confirm(
-        `Are you sure you want to delete ${productIds.size} selected product(s)? This action cannot be undone.`
+        `Are you sure you want to delete ${productIds.size} selected product(s)? This action cannot be undone.`,
       );
 
       if (!confirmed) return;
@@ -222,7 +222,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         console.error("Failed to batch delete products:", error);
       }
     },
-    [batchDeleteMutation]
+    [batchDeleteMutation],
   );
 
   const handleFilterPreset = useCallback((filterType: string) => {
@@ -258,7 +258,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
 
   const handleBatchEditClick = useCallback(() => {
     const selectedProducts = products.filter((p) =>
-      selectedProductIds.has(p.id)
+      selectedProductIds.has(p.id),
     );
     setProductsToEdit(selectedProducts);
     setEditModalOpened(true);
@@ -320,9 +320,19 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         ),
       },
       {
+        key: "barcode",
+        title: "Barcode",
+        width: 120,
+        render: (item: Product) => (
+          <Text size="xs" ff="monospace">
+            {item.barcode || "—"}
+          </Text>
+        ),
+      },
+      {
         key: "brand",
         title: "Product",
-        width: 200,
+        width: 320,
         sortable: true,
         sortKey: "brand",
         render: (item: Product) => (
@@ -356,18 +366,13 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
               <Text size="xs" c="dimmed" truncate>
                 {item.generic}
               </Text>
+              {item.formulation && (
+                <Text size="xs" c="dimmed" truncate>
+                  {item.formulation}
+                </Text>
+              )}
             </div>
           </Group>
-        ),
-      },
-      {
-        key: "barcode",
-        title: "Barcode",
-        width: 120,
-        render: (item: Product) => (
-          <Text size="xs" ff="monospace">
-            {item.barcode || "—"}
-          </Text>
         ),
       },
       {
@@ -414,16 +419,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
           <Text size="sm">{item.location || "—"}</Text>
         ),
       },
-      {
-        key: "formulation",
-        title: "Formulation",
-        width: 120,
-        sortable: true,
-        sortKey: "formulation",
-        render: (item: Product) => (
-          <Text size="sm">{item.formulation || "—"}</Text>
-        ),
-      },
+
       {
         key: "quantity",
         title: "Stock",
@@ -522,7 +518,7 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
       handleSelectProduct,
       getStockColor,
       formatCurrency,
-    ]
+    ],
   );
 
   return (
@@ -554,10 +550,10 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                 isLowStock === true
                   ? "low"
                   : isNoStock === true
-                  ? "none"
-                  : isLowStock === false
-                  ? "normal"
-                  : null
+                    ? "none"
+                    : isLowStock === false
+                      ? "normal"
+                      : null
               }
               onChange={(value) => {
                 setIsPhilHealth(false);
@@ -590,8 +586,8 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                 isExpired === true
                   ? "expired"
                   : isExpiringSoon === true
-                  ? "expiring"
-                  : null
+                    ? "expiring"
+                    : null
               }
               onChange={(value) => {
                 setIsPhilHealth(false);
@@ -720,57 +716,71 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
                 Print
               </Button>
             </Tooltip>
-            {selectedProductIds.size === 1 && (
-              <Tooltip label="Adjust stock quantity">
-                <Button
-                  leftSection={<IconAdjustments size={16} />}
-                  variant="light"
-                  color="blue"
-                  size="sm"
-                  onClick={() => {
-                    const productId = Array.from(selectedProductIds)[0];
-                    const product = products.find((p) => p.id === productId);
-                    if (product) {
-                      setProductToAdjust(product);
-                      setAdjustStockModalOpened(true);
-                    }
-                  }}
-                >
-                  Adjust Stock
-                </Button>
-              </Tooltip>
-            )}
-            {selectedProductIds.size > 0 && (
-              <>
-                <Tooltip
-                  label={`Edit ${selectedProductIds.size} selected product(s)`}
-                >
-                  <Button
-                    leftSection={<IconEdit size={16} />}
-                    variant="light"
-                    size="sm"
-                    onClick={handleBatchEditClick}
-                  >
-                    Edit ({selectedProductIds.size})
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  label={`Delete ${selectedProductIds.size} selected product(s)`}
-                >
-                  <Button
-                    leftSection={<IconTrash size={16} />}
-                    variant="light"
-                    color="red"
-                    size="sm"
-                    onClick={() => handleBatchDelete(selectedProductIds)}
-                    loading={batchDeleteMutation.isPending}
-                    disabled={batchDeleteMutation.isPending}
-                  >
-                    Delete ({selectedProductIds.size})
-                  </Button>
-                </Tooltip>
-              </>
-            )}
+            <Tooltip
+              label={
+                selectedProductIds.size === 1
+                  ? "Adjust stock quantity"
+                  : "Select exactly 1 product to adjust stock"
+              }
+            >
+              <Button
+                leftSection={<IconAdjustments size={16} />}
+                variant="light"
+                color="blue"
+                size="sm"
+                disabled={selectedProductIds.size !== 1}
+                onClick={() => {
+                  const productId = Array.from(selectedProductIds)[0];
+                  const product = products.find((p) => p.id === productId);
+                  if (product) {
+                    setProductToAdjust(product);
+                    setAdjustStockModalOpened(true);
+                  }
+                }}
+              >
+                Adjust Stock
+              </Button>
+            </Tooltip>
+            <Tooltip
+              label={
+                selectedProductIds.size > 0
+                  ? `Edit ${selectedProductIds.size} selected product(s)`
+                  : "Select products to edit"
+              }
+            >
+              <Button
+                leftSection={<IconEdit size={16} />}
+                variant="light"
+                size="sm"
+                disabled={selectedProductIds.size === 0}
+                onClick={handleBatchEditClick}
+              >
+                Edit
+                {selectedProductIds.size > 0 && ` (${selectedProductIds.size})`}
+              </Button>
+            </Tooltip>
+            <Tooltip
+              label={
+                selectedProductIds.size > 0
+                  ? `Delete ${selectedProductIds.size} selected product(s)`
+                  : "Select products to delete"
+              }
+            >
+              <Button
+                leftSection={<IconTrash size={16} />}
+                variant="light"
+                color="red"
+                size="sm"
+                disabled={
+                  selectedProductIds.size === 0 || batchDeleteMutation.isPending
+                }
+                loading={batchDeleteMutation.isPending}
+                onClick={() => handleBatchDelete(selectedProductIds)}
+              >
+                Delete
+                {selectedProductIds.size > 0 && ` (${selectedProductIds.size})`}
+              </Button>
+            </Tooltip>
             <Button variant="filled" size="sm" onClick={onAddProduct}>
               Add Product
             </Button>
@@ -816,7 +826,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         onClose={() => setEditModalOpened(false)}
         products={productsToEdit}
         onSuccess={() => {
-          refetch();
           setSelectedProductIds(new Set());
         }}
       />
@@ -837,7 +846,6 @@ export function ProductsTab({ onAddProduct }: ProductsTabProps) {
         }}
         product={productToAdjust}
         onSuccess={() => {
-          refetch();
           setSelectedProductIds(new Set());
         }}
       />

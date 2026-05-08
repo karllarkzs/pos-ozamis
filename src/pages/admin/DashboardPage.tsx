@@ -19,30 +19,27 @@ import { ComprehensiveDashboardOverview } from "../../components/ComprehensiveDa
 import { InventoryAlerts } from "../../components/InventoryAlerts";
 
 export function DashboardPage() {
-  
-  const [startDate, setStartDate] = useState<Date | null>(new Date()); 
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
 
-  
   const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
 
-  
-  const formatDateLocal = (date: Date | null): string => {
+  const formatDateLocal = (date: Date | null, endOfDay = false): string => {
     if (!date) return "";
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return endOfDay
+      ? `${year}-${month}-${day}T23:59:59`
+      : `${year}-${month}-${day}T00:00:00`;
   };
 
-  
-  const startDateStr = formatDateLocal(startDate);
-  const endDateStr = formatDateLocal(endDate);
+  const startDateStr = formatDateLocal(startDate, false);
+  const endDateStr = formatDateLocal(endDate, true);
 
-  
   const detectPeriodFromDates = (
     start: Date | null,
-    end: Date | null
+    end: Date | null,
   ): string => {
     if (!start || !end) return "custom";
 
@@ -51,11 +48,10 @@ export function DashboardPage() {
     const startDate = new Date(
       start.getFullYear(),
       start.getMonth(),
-      start.getDate()
+      start.getDate(),
     );
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-    
     if (
       startDate.getTime() === today.getTime() &&
       endDate.getTime() === today.getTime()
@@ -63,14 +59,13 @@ export function DashboardPage() {
       return "today";
     }
 
-    
     const dayOfWeek = now.getDay();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - dayOfWeek);
     const startOfWeekDate = new Date(
       startOfWeek.getFullYear(),
       startOfWeek.getMonth(),
-      startOfWeek.getDate()
+      startOfWeek.getDate(),
     );
 
     if (
@@ -80,7 +75,6 @@ export function DashboardPage() {
       return "thisWeek";
     }
 
-    
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     if (
       startDate.getTime() === startOfMonth.getTime() &&
@@ -89,7 +83,6 @@ export function DashboardPage() {
       return "thisMonth";
     }
 
-    
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     if (
       startDate.getTime() === startOfYear.getTime() &&
@@ -106,7 +99,7 @@ export function DashboardPage() {
 
     setSelectedPeriod(period);
 
-    if (period === "custom") return; 
+    if (period === "custom") return;
 
     const now = new Date();
 
@@ -146,7 +139,6 @@ export function DashboardPage() {
       setEndDate(date);
     }
 
-    
     const newStartDate = isStartDate ? date : startDate;
     const newEndDate = isStartDate ? endDate : date;
     const detectedPeriod = detectPeriodFromDates(newStartDate, newEndDate);

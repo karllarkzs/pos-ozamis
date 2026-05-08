@@ -5,6 +5,7 @@ export * from "./useReports";
 export * from "./useRoles";
 export * from "./useUsers";
 export * from "./useExpenses";
+export * from "./useLabTests";
 export { useEmployeeSales } from "./useReports";
 
 export type {

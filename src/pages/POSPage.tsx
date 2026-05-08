@@ -82,6 +82,7 @@ export function POSPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [stockFilter, setStockFilter] = useState<string>("All");
   const [isPhilHealthOnly, setIsPhilHealthOnly] = useState<boolean>(false);
+  const [itemTypeFilter, setItemTypeFilter] = useState<"Product" | "LabTest" | null>(null);
   const [sortBy, setSortBy] = useState<
     "name" | "formulation" | "price" | "quantity" | "category" | "location"
   >("name");
@@ -199,6 +200,7 @@ export function POSPage() {
       isLowStock: stockFilter === "Low Stock" ? true : undefined,
       isNoStock: stockFilter === "No Stock" ? true : undefined,
       isPhilHealth: isPhilHealthOnly ? true : undefined,
+      itemType: itemTypeFilter ?? undefined,
       sortBy: sortBy,
       sortDirection: sortDirection,
       pageSize: 20,
@@ -211,6 +213,7 @@ export function POSPage() {
       location,
       stockFilter,
       isPhilHealthOnly,
+      itemTypeFilter,
       sortBy,
       sortDirection,
     ],
@@ -1071,6 +1074,22 @@ export function POSPage() {
               checked={isPhilHealthOnly}
               onChange={(event) =>
                 setIsPhilHealthOnly(event.currentTarget.checked)
+              }
+              size="sm"
+            />
+            <Checkbox
+              label="Products only"
+              checked={itemTypeFilter === "Product"}
+              onChange={(event) =>
+                setItemTypeFilter(event.currentTarget.checked ? "Product" : null)
+              }
+              size="sm"
+            />
+            <Checkbox
+              label="Tests only"
+              checked={itemTypeFilter === "LabTest"}
+              onChange={(event) =>
+                setItemTypeFilter(event.currentTarget.checked ? "LabTest" : null)
               }
               size="sm"
             />

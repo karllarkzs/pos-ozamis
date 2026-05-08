@@ -5,8 +5,16 @@ import { IconPlus, IconDeviceFloppy, IconTrash } from "@tabler/icons-react";
 import { ProductEntryCard } from "./ProductEntryCard";
 import type { Product } from "../lib/api";
 import { apiEndpoints } from "../lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useProductsReferenceData } from "../hooks/api/useProducts";
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
+import {
+  useProductsReferenceData,
+  productsKeys,
+} from "../hooks/api/useProducts";
+import type { ProductResponse } from "../lib/api";
 
 type ProductWithDate = Omit<Product, "expirationDate"> & {
   expirationDate: Date | null;
@@ -134,7 +142,20 @@ export function EditProductModal({
         message: `Product "${productName}" deleted successfully`,
         color: "green",
       });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.setQueriesData<InfiniteData<ProductResponse>>(
+        { queryKey: productsKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.filter((p) => p.id !== productId),
+              totalCount: Math.max(0, page.totalCount - 1),
+            })),
+          };
+        },
+      );
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -153,8 +174,9 @@ export function EditProductModal({
       setIsSubmitting(true);
       setErrors({});
 
+      const updatedProducts: Product[] = [];
       for (const product of products) {
-        await updateProductMutation.mutateAsync({
+        const res = await updateProductMutation.mutateAsync({
           id: product.id,
           product: {
             barcode: product.barcode,
@@ -178,6 +200,7 @@ export function EditProductModal({
             isPhilHealth: product.isPhilHealth,
           },
         });
+        updatedProducts.push(res.data);
       }
 
       notifications.show({
@@ -186,7 +209,20 @@ export function EditProductModal({
         color: "green",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      const updatedMap = new Map(updatedProducts.map((p) => [p.id, p]));
+      queryClient.setQueriesData<InfiniteData<ProductResponse>>(
+        { queryKey: productsKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((p) => updatedMap.get(p.id) ?? p),
+            })),
+          };
+        },
+      );
       onSuccess();
       onClose();
     } catch (error: any) {

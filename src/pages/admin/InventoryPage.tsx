@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { Container, Tabs, Title, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconPackage, IconTruck } from "@tabler/icons-react";
+import { IconPackage, IconTruck, IconTestPipe } from "@tabler/icons-react";
 import { BulkAddProductModal } from "../../components/BulkAddProductModal";
 import { ProductsTab } from "../../components/inventory/ProductsTab";
 import { RestockingTab } from "../../components/inventory/RestockingTab";
+import { LabTestsTab } from "../../components/inventory/LabTestsTab";
 import { useProductsReferenceData } from "../../hooks/api/useProducts";
 
 export function InventoryPage() {
@@ -62,6 +63,9 @@ export function InventoryPage() {
           <Tabs.Tab value="restocking" leftSection={<IconTruck size={16} />}>
             Restocking
           </Tabs.Tab>
+          <Tabs.Tab value="labtests" leftSection={<IconTestPipe size={16} />}>
+            Lab Tests
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel
@@ -87,6 +91,19 @@ export function InventoryPage() {
           }}
         >
           <RestockingTab />
+        </Tabs.Panel>
+
+        <Tabs.Panel
+          value="labtests"
+          pt="md"
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <LabTestsTab />
         </Tabs.Panel>
       </Tabs>
 

@@ -18,9 +18,15 @@ import {
   IconAlertCircle,
   IconDeviceFloppy,
 } from "@tabler/icons-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { apiEndpoints } from "../lib/api";
 import type { Product } from "../lib/api";
+import type { ProductResponse } from "../lib/api";
+import { productsKeys } from "../hooks/api/useProducts";
 
 interface StockAdjustmentModalProps {
   opened: boolean;
@@ -86,7 +92,7 @@ export function StockAdjustmentModal({
     try {
       setIsSubmitting(true);
 
-      await adjustStockMutation.mutateAsync({
+      const result = await adjustStockMutation.mutateAsync({
         productId: product.id,
         quantityChange: typeof quantityChange === "number" ? quantityChange : 0,
         adjustmentType,
@@ -99,7 +105,29 @@ export function StockAdjustmentModal({
         color: "green",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      const { quantityAfter } = result.data;
+      queryClient.setQueriesData<InfiniteData<ProductResponse>>(
+        { queryKey: productsKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((p) =>
+                p.id === product.id
+                  ? {
+                      ...p,
+                      quantity: quantityAfter,
+                      isLowStock:
+                        quantityAfter > 0 && quantityAfter <= p.minimumStock,
+                    }
+                  : p,
+              ),
+            })),
+          };
+        },
+      );
       onSuccess();
       handleClose();
     } catch (error: any) {
@@ -151,8 +179,8 @@ export function StockAdjustmentModal({
                   product.quantity === 0
                     ? "red"
                     : product.isLowStock
-                    ? "yellow"
-                    : "green"
+                      ? "yellow"
+                      : "green"
                 }
               >
                 {product.quantity}
