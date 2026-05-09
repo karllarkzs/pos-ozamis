@@ -582,7 +582,9 @@ export function LabTestsTab() {
             decimalScale={2}
             prefix="₱"
             value={form.price}
-            onChange={(v) => setForm((f) => ({ ...f, price: v }))}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, price: v as number | "" }))
+            }
           />
           <Group grow>
             <Switch
